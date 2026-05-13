@@ -824,11 +824,32 @@ body{font-family:'Tiro Bangla',serif;background:var(--darker);color:var(--text);
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+// ════════════════════════════════════════
+// FIREBASE SETUP
+// ════════════════════════════════════════
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_u_6CGvkY83_xCX_W8Pj5xlKbUkvdXic",
+  authDomain: "aktsukii.firebaseapp.com",
+  projectId: "aktsukii",
+  storageBucket: "aktsukii.firebasestorage.app",
+  messagingSenderId: "668301487715",
+  appId: "1:668301487715:web:e156c95b9d9702354a9256",
+  measurementId: "G-VEQ1Q7LFZQ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
 // ═══ STATE ═══
 let USER = {
   name:'', phone:'', pass:'',
-  uid:'', balance:0, hasActivePlan:false, hasActiveRefer:false,
+  uid:'', firebaseUid:'', balance:0, hasActivePlan:false, hasActiveRefer:false,
   planName:'কোনো প্ল্যান নেই', planPrice:0, planDaily:0
 };
 
@@ -842,24 +863,9 @@ const ALL_PLANS = [
 const CHECKIN_REWARDS=[5,7,10,14,19,25,32];
 let selectedWithdrawAmount=1000, selectedPlan=null;
 
-// ═══ AUTH SYSTEM ═══
-function getUsers(){return JSON.parse(localStorage.getItem('akt_all_users')||'[]');}
-function saveUsers(u){localStorage.setItem('akt_all_users',JSON.stringify(u));}
-
-// ── ডেমো একাউন্ট (একবার সেট হলে আর বদলাবে না) ──
-(function seedDemo(){
-  const users=getUsers();
-  if(!users.find(u=>u.phone==='01700000000')){
-    users.push({
-      name:'Demo User',phone:'01700000000',pass:'demo1234',
-      uid:'0000',balance:2500,hasActivePlan:true,hasActiveRefer:true,
-      planName:'৳১,০০০ প্ল্যান',planPrice:1000,planDaily:70,
-      joined:'০১ মে ২০২৬',totalEarned:4200,referredBy:''
-    });
-    saveUsers(users);
-  }
-})();
-
+// ════════════════════════════════════════
+// AUTH SYSTEM — Firebase Auth + Firestore
+// ════════════════════════════════════════
 function showAuthForm(view){
   document.getElementById('auth-welcome').style.display  = view==='welcome'  ? 'block':'none';
   document.getElementById('auth-login').style.display    = view==='login'    ? 'block':'none';
@@ -867,9 +873,11 @@ function showAuthForm(view){
   ['l-err','r-err'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
 }
 function switchTab(v){showAuthForm(v);}
+window.showAuthForm = showAuthForm;
+window.switchTab = switchTab;
 function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',3500);}
 
-function doAuthRegister(){
+async function doAuthRegister(){
   const name=document.getElementById('r-name').value.trim();
   const phone=document.getElementById('r-phone').value.trim();
   const pass=document.getElementById('r-pass').value;
@@ -879,96 +887,169 @@ function doAuthRegister(){
   if(!phone||phone.length<11){showErr('r-err','⚠️ সঠিক ফোন নম্বর দিন!');return;}
   if(pass.length<6){showErr('r-err','⚠️ পাসওয়ার্ড কমপক্ষে ৬ অক্ষর!');return;}
   if(pass!==pass2){showErr('r-err','⚠️ পাসওয়ার্ড মিলছে না!');return;}
-  const users=getUsers();
-  if(users.find(u=>u.phone===phone)){showErr('r-err','⚠️ এই নম্বরে আইডি আছে! লগইন করুন।');return;}
-  // validate refer code
+
+  // Check phone already exists
+  const phoneQ = query(collection(db,'users'), where('phone','==',phone));
+  const phoneSnap = await getDocs(phoneQ);
+  if(!phoneSnap.empty){showErr('r-err','⚠️ এই নম্বরে আইডি আছে! লগইন করুন।');return;}
+
+  // Validate refer code
   let referredBy='';
   if(refCode){
     const refUid=refCode.replace(/AKT/i,'').replace(/akatsuki\.app\/join\?ref=AKT/i,'').trim();
-    const referrer=users.find(u=>u.uid===refUid);
-    if(!referrer){showErr('r-err','⚠️ রেফার কোড ভুল!');return;}
+    const refDoc=await getDoc(doc(db,'users',refUid));
+    if(!refDoc.exists()){showErr('r-err','⚠️ রেফার কোড ভুল!');return;}
     referredBy=refUid;
   }
-  const uid=String(Math.floor(1000+Math.random()*9000));
-  const newU={name,phone,pass,uid,balance:0,hasActivePlan:false,hasActiveRefer:false,planName:'কোনো প্ল্যান নেই',planPrice:0,planDaily:0,joined:new Date().toLocaleDateString('bn-BD'),totalEarned:0,referredBy};
-  users.push(newU); saveUsers(users);
-  localStorage.setItem('akt_session',phone);
-  enterApp(newU,false);
-  showToast('🎉 আইডি তৈরি হয়েছে! স্বাগতম '+name+'!'+(referredBy?' রেফার বোনাস যুক্ত হবে।':''));
-}
 
-function doAuthLogin(){
+  try{
+    const email = phone+'@aktsukii.app';
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    const fbUid = cred.user.uid;
+    const uid = String(Math.floor(1000+Math.random()*9000));
+    const newU = {
+      name, phone, pass, uid, firebaseUid:fbUid,
+      balance:0, hasActivePlan:false, hasActiveRefer:false,
+      planName:'কোনো প্ল্যান নেই', planPrice:0, planDaily:0,
+      joined:new Date().toLocaleDateString('bn-BD'), totalEarned:0, referredBy,
+      disabled:false
+    };
+    await setDoc(doc(db,'users',uid), newU);
+    await enterApp(newU);
+    showToast('🎉 আইডি তৈরি হয়েছে! স্বাগতম '+name+'!'+(referredBy?' রেফার বোনাস যুক্ত হবে।':''));
+  } catch(e){
+    showErr('r-err','⚠️ '+getFirebaseError(e.code));
+  }
+}
+window.doAuthRegister = doAuthRegister;
+
+async function doAuthLogin(){
   const phone=document.getElementById('l-phone').value.trim();
   const pass=document.getElementById('l-pass').value;
   if(!phone){showErr('l-err','⚠️ ফোন নম্বর দিন!');return;}
   if(!pass){showErr('l-err','⚠️ পাসওয়ার্ড দিন!');return;}
-  const u=getUsers().find(x=>x.phone===phone&&x.pass===pass);
-  if(!u){showErr('l-err','⚠️ ফোন নম্বর বা পাসওয়ার্ড ভুল!');return;}
-  localStorage.setItem('akt_session',phone);
-  enterApp(u,false);
-  showToast('✅ স্বাগতম, '+u.name+'!');
+  try{
+    const email = phone+'@aktsukii.app';
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged will handle enterApp
+  } catch(e){
+    showErr('l-err','⚠️ ফোন নম্বর বা পাসওয়ার্ড ভুল!');
+  }
+}
+window.doAuthLogin = doAuthLogin;
+
+function getFirebaseError(code){
+  const m={
+    'auth/email-already-in-use':'এই নম্বরে আইডি আছে!',
+    'auth/wrong-password':'পাসওয়ার্ড ভুল!',
+    'auth/user-not-found':'একাউন্ট পাওয়া যায়নি!',
+    'auth/too-many-requests':'অনেকবার চেষ্টা হয়েছে, পরে চেষ্টা করুন।',
+  };
+  return m[code]||'কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন।';
 }
 
 function enterGuest(){
   USER.name='গেস্ট'; USER.phone=''; USER.uid='GUEST'; USER.balance=0;
   USER.hasActivePlan=false; USER.isGuest=true;
   USER.planName='কোনো প্ল্যান নেই'; USER.planPrice=0; USER.planDaily=0;
-  const auth=document.getElementById('authScreen');
-  const sb=document.querySelector('.sidebar');
-  const mn=document.querySelector('.main');
-  if(auth) auth.style.display='none';
-  if(sb) sb.style.display='flex';
-  if(mn) mn.style.display='block';
+  document.getElementById('authScreen').style.display='none';
+  document.querySelector('.sidebar').style.display='flex';
+  document.querySelector('.main').style.display='block';
   init();
-  // show login btn in sidebar
   document.getElementById('sidebar-login-btn').style.display='flex';
 }
+window.enterGuest = enterGuest;
 
-function enterApp(u,isGuest){
-  Object.assign(USER,{name:u.name,phone:u.phone,pass:u.pass,uid:u.uid,balance:u.balance||0,hasActivePlan:u.hasActivePlan||false,hasActiveRefer:u.hasActiveRefer||false,planName:u.planName||'কোনো প্ল্যান নেই',planPrice:u.planPrice||0,planDaily:u.planDaily||0,isGuest:false});
-  const auth=document.getElementById('authScreen');
-  const sb=document.querySelector('.sidebar');
-  const mn=document.querySelector('.main');
-  if(auth) auth.style.display='none';
-  if(sb) sb.style.display='flex';
-  if(mn) mn.style.display='block';
+async function enterApp(u){
+  Object.assign(USER,{
+    name:u.name, phone:u.phone, pass:u.pass, uid:u.uid, firebaseUid:u.firebaseUid||'',
+    balance:u.balance||0, hasActivePlan:u.hasActivePlan||false,
+    hasActiveRefer:u.hasActiveRefer||false,
+    planName:u.planName||'কোনো প্ল্যান নেই',
+    planPrice:u.planPrice||0, planDaily:u.planDaily||0, isGuest:false
+  });
+  document.getElementById('authScreen').style.display='none';
+  document.querySelector('.sidebar').style.display='flex';
+  document.querySelector('.main').style.display='block';
   document.getElementById('sidebar-login-btn').style.display='none';
   init();
 }
 
-function persistUser(){
-  if(!USER.phone||USER.isGuest) return;
-  const users=getUsers();
-  const idx=users.findIndex(x=>x.phone===USER.phone);
-  if(idx>=0) users[idx]={...users[idx],...USER};
-  saveUsers(users);
+async function persistUser(){
+  if(!USER.uid||USER.isGuest||USER.uid==='GUEST') return;
+  try{
+    await updateDoc(doc(db,'users',USER.uid),{
+      balance:USER.balance, hasActivePlan:USER.hasActivePlan,
+      hasActiveRefer:USER.hasActiveRefer, planName:USER.planName,
+      planPrice:USER.planPrice, planDaily:USER.planDaily,
+      name:USER.name, phone:USER.phone
+    });
+  } catch(e){ console.warn('persistUser error',e); }
 }
 
 function guestToLogin(){
-  // hide app, show auth login
   document.querySelector('.sidebar').style.display='none';
   document.querySelector('.main').style.display='none';
   document.getElementById('authScreen').style.display='flex';
   showAuthForm('login');
 }
+window.guestToLogin = guestToLogin;
 
-function doLogout(){
-  localStorage.removeItem('akt_session');
+async function doLogout(){
+  await signOut(auth);
   USER.isGuest=false;
   document.getElementById('authScreen').style.display='flex';
   document.querySelector('.sidebar').style.display='none';
   document.querySelector('.main').style.display='none';
   showAuthForm('welcome');
 }
+window.doLogout = doLogout;
 
-let checkinDay=parseInt(localStorage.getItem('akt_checkin_day')||'0');
-let lastCheckin=localStorage.getItem('akt_last_checkin')||'';
+// ── Firebase Auth state listener ──
+onAuthStateChanged(auth, async (fbUser) => {
+  if(fbUser){
+    // Find user doc by firebaseUid
+    const q = query(collection(db,'users'), where('firebaseUid','==',fbUser.uid));
+    const snap = await getDocs(q);
+    if(!snap.empty){
+      const u = snap.docs[0].data();
+      if(!u.disabled){
+        await enterApp(u);
+      } else {
+        await signOut(auth);
+        showToast('🚫 আপনার একাউন্ট ডিজেবল করা হয়েছে।');
+      }
+    }
+  }
+});
+
+let checkinDay=0, lastCheckin='';
 const todayStr=new Date().toDateString();
+let boxOpenedToday=0;
 
-let boxOpenedToday = localStorage.getItem('akt_box_date')===todayStr
-  ? parseInt(localStorage.getItem('akt_box_plan')||'0') : 0;
+async function loadUserExtras(){
+  if(!USER.uid||USER.isGuest) return;
+  try{
+    const snap = await getDoc(doc(db,'user_extras',USER.uid));
+    if(snap.exists()){
+      const d=snap.data();
+      checkinDay=d.checkinDay||0;
+      lastCheckin=d.lastCheckin||'';
+      boxOpenedToday=d.boxDate===todayStr?(d.boxPlan||0):0;
+    }
+  } catch(e){ console.warn('loadUserExtras',e); }
+}
+async function saveUserExtras(){
+  if(!USER.uid||USER.isGuest) return;
+  try{
+    await setDoc(doc(db,'user_extras',USER.uid),{
+      checkinDay, lastCheckin, boxDate:todayStr, boxPlan:boxOpenedToday
+    },{merge:true});
+  } catch(e){ console.warn('saveUserExtras',e); }
+}
 
-function init(){
+async function init(){
+  await loadUserExtras();
   document.getElementById('disp-uid').textContent=USER.uid;
   document.getElementById('prof-uid').textContent='AKT-'+USER.uid;
   document.getElementById('edit-uid-disp').textContent='AKT-'+USER.uid;
@@ -1006,9 +1087,13 @@ function applyGuestUI(){
   if(guestBtns) guestBtns.style.display=isGuest?'block':'none';
 }
 
-function renderReferUsers(){
-  const users=getUsers();
-  const myReferrals=users.filter(u=>u.referredBy===USER.uid);
+async function renderReferUsers(){
+  let myReferrals=[];
+  try{
+    const q=query(collection(db,'users'),where('referredBy','==',USER.uid));
+    const snap=await getDocs(q);
+    myReferrals=snap.docs.map(d=>d.data());
+  } catch(e){ console.warn('renderReferUsers',e); }
   document.getElementById('refer-total-count').textContent=myReferrals.length;
   const active=myReferrals.filter(u=>u.hasActivePlan);
   document.getElementById('refer-active-count').textContent=active.length;
@@ -1031,9 +1116,14 @@ function renderReferUsers(){
   });
 }
 
-function renderNotifs(){
+async function renderNotifs(){
   const c=document.getElementById('notif-list'); if(!c) return;
-  const notifs=JSON.parse(localStorage.getItem('akt_notifs_'+USER.uid)||'[]');
+  let notifs=[];
+  try{
+    const q=query(collection(db,'notifications',USER.uid,'items'),orderBy('createdAt','desc'));
+    const snap=await getDocs(q);
+    notifs=snap.docs.map(d=>d.data());
+  } catch(e){ notifs=[]; }
   if(!notifs.length){
     c.innerHTML=`<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px;"><div style="font-size:40px;margin-bottom:10px">🔔</div>এখনো কোনো নোটিফিকেশন নেই</div>`;
     return;
@@ -1081,7 +1171,7 @@ function selectAmount(el,val){
 }
 
 // ═══ DEPOSIT SUBMIT ═══
-function submitDeposit(){
+async function submitDeposit(){
   if(USER.isGuest){showToast('🔐 ডিপোজিট করতে আগে লগইন করুন!');return;}
   const sender=document.getElementById('dep-sender').value.trim();
   const amount=parseFloat(document.getElementById('dep-amount').value);
@@ -1091,32 +1181,37 @@ function submitDeposit(){
   if(!amount||amount<100){showToast('⚠️ সর্বনিম্ন ৳১০০ ডিপোজিট করুন!');return;}
   if(!trxid){showToast('⚠️ TrxID দিন!');return;}
 
-  // save to localStorage so admin can see
-  const allDeps=JSON.parse(localStorage.getItem('akt_deposits')||'[]');
-  const existing=allDeps.find(d=>d.trxId===trxid);
-  if(existing){showToast('⚠️ এই TrxID ইতিমধ্যে জমা দেওয়া হয়েছে!');return;}
-
-  const dep={
-    id:'D'+Date.now(),userId:'AKT-'+USER.uid,userName:USER.name,
-    phone:sender,amount,method:method.replace(/[^\w]/g,'').trim()||'bKash',
-    trxId:trxid,status:'pending',time:new Date().toLocaleTimeString('bn-BD')
-  };
-  allDeps.push(dep);
-  localStorage.setItem('akt_deposits',JSON.stringify(allDeps));
-
-  // clear fields
-  document.getElementById('dep-sender').value='';
-  document.getElementById('dep-amount').value='';
-  document.getElementById('dep-trxid').value='';
-
-  renderDepPending();
-  showToast('📤 রিকোয়েস্ট পাঠানো হয়েছে! Admin যাচাই করলে ব্যালান্স যোগ হবে।');
+  // Check duplicate trxId in Firestore
+  try{
+    const q=query(collection(db,'deposits'),where('trxId','==',trxid));
+    const snap=await getDocs(q);
+    if(!snap.empty){showToast('⚠️ এই TrxID ইতিমধ্যে জমা দেওয়া হয়েছে!');return;}
+    const dep={
+      id:'D'+Date.now(),userId:'AKT-'+USER.uid,userName:USER.name,
+      phone:sender,amount,method:method.replace(/[^\w]/g,'').trim()||'bKash',
+      trxId:trxid,status:'pending',time:new Date().toLocaleTimeString('bn-BD'),
+      createdAt:serverTimestamp()
+    };
+    await addDoc(collection(db,'deposits'),dep);
+    document.getElementById('dep-sender').value='';
+    document.getElementById('dep-amount').value='';
+    document.getElementById('dep-trxid').value='';
+    renderDepPending();
+    showToast('📤 রিকোয়েস্ট পাঠানো হয়েছে! Admin যাচাই করলে ব্যালান্স যোগ হবে।');
+  } catch(e){
+    showToast('⚠️ সমস্যা হয়েছে, আবার চেষ্টা করুন!');
+    console.error(e);
+  }
 }
 
-function renderDepPending(){
+async function renderDepPending(){
   const c=document.getElementById('dep-pending-list'); if(!c) return;
-  const allDeps=JSON.parse(localStorage.getItem('akt_deposits')||'[]');
-  const mine=allDeps.filter(d=>d.userId==='AKT-'+USER.uid);
+  let mine=[];
+  try{
+    const q=query(collection(db,'deposits'),where('userId','==','AKT-'+USER.uid));
+    const snap=await getDocs(q);
+    mine=snap.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  } catch(e){ mine=[]; }
   if(!mine.length){c.innerHTML='';return;}
   c.innerHTML=`<div style="font-size:12px;color:var(--muted);margin:16px 0 8px">📋 আপনার রিকোয়েস্ট</div>`;
   mine.slice().reverse().forEach(d=>{
@@ -1144,12 +1239,23 @@ function updateWithdrawConditions(){
     btn.textContent=ok?'উত্তোলন করুন':'শর্ত পূরণ হয়নি ⛔';
   }
 }
-function doWithdraw(){
+async function doWithdraw(){
   if(!USER.hasActivePlan||!USER.hasActiveRefer){showToast('⛔ উত্তোলনের শর্ত পূরণ হয়নি!');return;}
   const num=document.getElementById('wd-number').value.trim();
   if(!num){showToast('⚠️ নম্বর দিন');return;}
   if(selectedWithdrawAmount<1000){showToast('⚠️ সর্বনিম্ন ৳১,০০০ উত্তোলন করুন');return;}
-  showToast('✅ ৳'+selectedWithdrawAmount.toLocaleString()+' উত্তোলন অনুরোধ পাঠানো হয়েছে!');
+  if(USER.balance<selectedWithdrawAmount){showToast('⚠️ পর্যাপ্ত ব্যালান্স নেই!');return;}
+  try{
+    await addDoc(collection(db,'withdrawals'),{
+      id:'W'+Date.now(), userId:'AKT-'+USER.uid, userName:USER.name,
+      phone:num, amount:selectedWithdrawAmount, method:'bKash',
+      status:'pending', time:new Date().toLocaleTimeString('bn-BD'),
+      createdAt:serverTimestamp()
+    });
+    showToast('✅ ৳'+selectedWithdrawAmount.toLocaleString()+' উত্তোলন অনুরোধ পাঠানো হয়েছে!');
+  } catch(e){
+    showToast('⚠️ সমস্যা হয়েছে!'); console.error(e);
+  }
 }
 
 // ═══ PLAN ═══
@@ -1200,7 +1306,7 @@ function openEditModal(){
   document.getElementById('edit-pass').value='';
   openModal('editModal');
 }
-function saveProfile(){
+async function saveProfile(){
   const n=document.getElementById('edit-name').value.trim();
   const p=document.getElementById('edit-phone').value.trim();
   const pw=document.getElementById('edit-pass').value;
@@ -1214,13 +1320,7 @@ function saveProfile(){
   closeModal('editModal');
   showToast('✅ প্রোফাইল আপডেট হয়েছে!');
 }
-function doLogout(){
-  localStorage.removeItem('akt_session');
-  document.getElementById('authScreen').style.display='flex';
-  document.querySelector('.sidebar').style.display='none';
-  document.querySelector('.main').style.display='none';
-  showAuthForm('welcome');
-}
+// doLogout is defined above (async Firebase version)
 
 // ═══ CHECK-IN ═══
 function renderCheckin(){
@@ -1240,14 +1340,14 @@ function renderCheckin(){
   else if(alreadyDone){btn.disabled=true;btn.textContent='⏳ আবার আসুন কাল (৳'+CHECKIN_REWARDS[checkinDay]+' পাবেন)';}
   else{btn.disabled=false;btn.textContent='✅ চেক-ইন করুন — ৳'+CHECKIN_REWARDS[checkinDay]+' পাবেন';}
 }
-function doCheckIn(){
+async function doCheckIn(){
   if(lastCheckin===todayStr){showToast('⏳ আজকে ইতিমধ্যে চেক-ইন করেছেন!');return;}
   if(checkinDay>=7){showToast('🎉 ৭ দিন সম্পূর্ণ!');return;}
   const reward=CHECKIN_REWARDS[checkinDay];
   USER.balance+=reward; refreshBalance();
-  lastCheckin=todayStr; localStorage.setItem('akt_last_checkin',todayStr);
+  lastCheckin=todayStr;
   checkinDay++; if(checkinDay>=7) checkinDay=0;
-  localStorage.setItem('akt_checkin_day',checkinDay);
+  await saveUserExtras();
   renderCheckin();
   showToast('🎉 চেক-ইন সফল! ৳'+reward+' ব্যালান্সে যোগ হয়েছে!');
 }
@@ -1325,7 +1425,7 @@ function renderPlansWithBoxes(){
   });
 }
 
-function openPlanBox(price, daily){
+async function openPlanBox(price, daily){
   const isMyPlan = USER.hasActivePlan && USER.planPrice === price;
   if(!isMyPlan){
     showToast('🔒 দয়া করে প্ল্যান সক্রিয় করে চেষ্টা করুন!');
@@ -1337,8 +1437,7 @@ function openPlanBox(price, daily){
   }
   // open it
   boxOpenedToday = price;
-  localStorage.setItem('akt_box_date', todayStr);
-  localStorage.setItem('akt_box_plan', String(price));
+  await saveUserExtras();
   USER.balance += daily; refreshBalance();
   renderPlansWithBoxes();
   document.getElementById('sw-emoji').textContent='🎊';
@@ -1386,11 +1485,10 @@ const REFER_MILESTONES = [
   {count:15, reward:799,  icon:'🥇', claimed:false},
   {count:20, reward:1099, icon:'👑', claimed:false},
 ];
-let referCount = parseInt(localStorage.getItem('akt_refer_count') || '3');
-let referMilestoneClaimed = JSON.parse(localStorage.getItem('akt_refer_claimed') || '[false,false,false,false]');
-REFER_MILESTONES.forEach((m,i)=>m.claimed=referMilestoneClaimed[i]);
+let referCount = 0;
+let referMilestoneClaimed = [false,false,false,false];
 
-function renderReferProgress(){
+async function renderReferProgress(){
   const total = 20;
   const pct = Math.min(referCount / total * 100, 100);
   document.getElementById('rp-bar-fill').style.width = pct + '%';
@@ -1443,35 +1541,56 @@ function renderReferProgress(){
   });
 }
 
-function claimReferReward(idx){
+async function claimReferReward(idx){
   const m = REFER_MILESTONES[idx];
   if(m.claimed){showToast('⚠️ ইতিমধ্যে ক্লেইম করা হয়েছে!');return;}
   if(referCount < m.count){showToast(`⚠️ ${m.count} রেফার লাগবে!`);return;}
   m.claimed = true;
   referMilestoneClaimed[idx] = true;
-  localStorage.setItem('akt_refer_claimed', JSON.stringify(referMilestoneClaimed));
   USER.balance += m.reward;
   refreshBalance();
+  await saveUserExtras();
   renderReferProgress();
   showToast(`🎉 ${m.icon} ৳${m.reward.toLocaleString()} রিওয়ার্ড ব্যালান্সে যোগ হয়েছে!`);
 }
 
-// ═══ STARTUP — runs after all functions defined ═══
+
+// ═══ EXPOSE FUNCTIONS TO HTML (required for type="module") ═══
+window.doAuthRegister = doAuthRegister;
+window.doAuthLogin = doAuthLogin;
+window.showAuthForm = showAuthForm;
+window.switchTab = switchTab;
+window.enterGuest = enterGuest;
+window.guestToLogin = guestToLogin;
+window.doLogout = doLogout;
+window.navigate = navigate;
+window.switchTab = switchTab;
+window.selectMethod = selectMethod;
+window.selectAmount = selectAmount;
+window.submitDeposit = submitDeposit;
+window.updateWithdrawConditions = updateWithdrawConditions;
+window.doWithdraw = doWithdraw;
+window.openPlan = openPlan;
+window.confirmPlan = confirmPlan;
+window.openEditModal = openEditModal;
+window.saveProfile = saveProfile;
+window.doCheckIn = doCheckIn;
+window.openPlanBox = openPlanBox;
+window.renderReferProgress = renderReferProgress;
+window.claimReferReward = claimReferReward;
+window.copyNumber = copyNumber;
+window.copyReferLink = copyReferLink;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.showToast = showToast;
+// ═══ STARTUP — Firebase Auth handles auto-login via onAuthStateChanged ═══
 (function(){
-  // Always hide sidebar & main first
   const sb=document.querySelector('.sidebar');
   const mn=document.querySelector('.main');
   if(sb) sb.style.display='none';
   if(mn) mn.style.display='none';
-
-  // Try auto-login from saved session
-  const ph=localStorage.getItem('akt_session');
-  if(ph){
-    const u=getUsers().find(x=>x.phone===ph);
-    if(u){ enterApp(u); return; }
-  }
-  // No session — show auth screen (already visible)
+  // onAuthStateChanged at top of script handles auto-login
 })();
 </script>
 </body>
-  </html>
+</html>
