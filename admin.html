@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akatsuki — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Tiro+Bangla&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--cr:#c1121f;--dk:#050508;--cb:rgba(15,5,5,.93);--ac:#ff4757;--gd:#ffd700;--tx:#f0e6e6;--mt:#a89090;--gn:#00e676;--sw:220px;--bl:#4fc3f7;--pp:#ce93d8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Tiro Bangla',serif;background:var(--dk);color:var(--tx);min-height:100vh;overflow-x:hidden;}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(180,10,10,.12),transparent 60%),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(50,5,120,.09),transparent),linear-gradient(160deg,#0a0005,#08000a 40%,#000508);}
+
+/* LOGIN */
+.ls{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.97);display:flex;align-items:center;justify-content:center;}
+.lb{background:rgba(10,2,2,.98);border:1px solid rgba(255,215,0,.3);border-radius:24px;padding:36px 30px;width:100%;max-width:360px;text-align:center;animation:pop .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes pop{from{transform:scale(.7) translateY(40px);opacity:0;}to{transform:scale(1);opacity:1;}}
+.lb-logo{font-family:'Cinzel Decorative',serif;font-size:22px;color:var(--gd);text-shadow:0 0 20px rgba(255,215,0,.4);}
+.lb-sub{font-size:9px;color:var(--bl);letter-spacing:3px;margin:4px 0 22px;font-family:'Orbitron',monospace;}
+.lb input{width:100%;padding:12px 15px;background:rgba(15,5,5,.9);border:1px solid rgba(180,20,20,.3);border-radius:10px;color:var(--tx);font-size:14px;outline:none;margin-bottom:11px;font-family:'Tiro Bangla',serif;transition:border-color .3s;}
+.lb input:focus{border-color:var(--gd);}
+.lb-btn{width:100%;padding:13px;background:linear-gradient(135deg,#7b1a1a,var(--cr),var(--ac));border:none;border-radius:11px;color:#fff;font-size:14px;font-family:'Tiro Bangla',serif;font-weight:bold;cursor:pointer;transition:all .3s;}
+.lb-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(230,57,70,.4);}
+.lb-err{color:var(--ac);font-size:12px;margin-top:8px;display:none;}
+
+/* SIDEBAR */
+.sb{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:rgba(4,0,8,.97);border-right:1px solid rgba(200,20,20,.15);z-index:100;display:flex;flex-direction:column;overflow-y:auto;transition:transform .3s;}
+.sb-hd{padding:17px 15px;border-bottom:1px solid rgba(200,30,30,.15);margin-bottom:5px;}
+.sb-lg{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--gd);display:flex;align-items:center;gap:7px;}
+.sb-bd{font-size:9px;color:var(--bl);letter-spacing:2px;margin-top:3px;font-family:'Orbitron',monospace;}
+.ns{font-size:8px;color:rgba(168,144,144,.3);letter-spacing:3px;padding:12px 15px 3px;font-family:'Orbitron',monospace;}
+.ni{display:flex;align-items:center;gap:9px;padding:10px 15px;cursor:pointer;color:var(--mt);font-size:13px;transition:all .2s;border-left:3px solid transparent;margin:1px 0;}
+.ni .ic{font-size:16px;flex-shrink:0;}
+.ni:hover{color:var(--tx);background:rgba(180,10,10,.08);border-left-color:rgba(230,57,70,.3);}
+.ni.on{color:var(--gd);background:rgba(180,10,10,.15);border-left-color:var(--gd);}
+.ni .bdg{margin-left:auto;background:var(--ac);color:#fff;font-size:9px;padding:2px 7px;border-radius:20px;font-family:'Orbitron',monospace;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,71,87,.4);}50%{box-shadow:0 0 0 5px rgba(255,71,87,0);}}
+.sb-ft{margin-top:auto;padding:11px 15px;border-top:1px solid rgba(200,30,30,.15);font-size:11px;color:var(--mt);}
+.sb-ft .lo{color:var(--ac);cursor:pointer;margin-top:4px;display:inline-block;}
+
+/* MAIN */
+.main{margin-left:var(--sw);padding:22px 20px;position:relative;z-index:10;min-height:100vh;}
+.pg{display:none;animation:pgIn .35s cubic-bezier(.22,1,.36,1);}
+.pg.on{display:block;}
+@keyframes pgIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.tb{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:9px;}
+.tb h1{font-family:'Cinzel Decorative',serif;font-size:18px;background:linear-gradient(135deg,#ff6b6b,var(--gd));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* STATS */
+.sr{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+.sc{background:var(--cb);border:1px solid rgba(180,20,20,.2);border-radius:14px;padding:16px 14px;position:relative;overflow:hidden;}
+.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.bl::after{background:linear-gradient(90deg,#1565c0,var(--bl));}
+.sc.gn::after{background:linear-gradient(90deg,#1b5e20,var(--gn));}
+.sc.rd::after{background:linear-gradient(90deg,var(--cr),var(--ac));}
+.sc.gd::after{background:linear-gradient(90deg,#e65100,var(--gd));}
+.sc.pp::after{background:linear-gradient(90deg,#4a148c,var(--pp));}
+.sc-i{font-size:24px;margin-bottom:6px;}
+.sc-v{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--gd);}
+.sc-l{font-size:11px;color:var(--mt);margin-top:3px;}
+
+/* CARD */
+.cd{background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.cd-hd{padding:13px 17px;border-bottom:1px solid rgba(180,20,20,.13);display:flex;align-items:center;justify-content:space-between;}
+.cd-hd h2{font-size:13px;color:var(--gd);font-weight:bold;}
+.cd-bd{padding:16px 17px;}
+table{width:100%;border-collapse:collapse;}
+th{padding:9px 12px;text-align:left;font-size:10px;color:var(--mt);letter-spacing:1px;border-bottom:1px solid rgba(180,20,20,.1);font-family:'Orbitron',monospace;}
+td{padding:10px 12px;font-size:12px;border-bottom:1px solid rgba(180,20,20,.06);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(180,10,10,.04);}
+
+/* STATUS */
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;}
+.dg{background:var(--gn);box-shadow:0 0 5px var(--gn);}
+.dr{background:#f44336;box-shadow:0 0 5px #f44336;}
+.spin{width:12px;height:12px;border:2px solid rgba(255,215,0,.25);border-top-color:var(--gd);border-radius:50%;display:inline-block;animation:sp .8s linear infinite;vertical-align:middle;margin-right:4px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* BUTTONS */
+.btn{padding:5px 11px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-family:'Tiro Bangla',serif;transition:all .2s;}
+.bg{background:rgba(0,100,0,.3);border:1px solid rgba(0,200,0,.3);color:var(--gn);}
+.bg:hover{background:rgba(0,150,0,.4);}
+.br{background:rgba(100,0,0,.3);border:1px solid rgba(200,0,0,.3);color:var(--ac);}
+.br:hover{background:rgba(150,0,0,.4);}
+.bb{background:rgba(0,50,100,.3);border:1px solid rgba(0,150,255,.3);color:var(--bl);}
+.bgd{background:rgba(80,50,0,.4);border:1px solid rgba(255,215,0,.3);color:var(--gd);}
+.bpr{background:linear-gradient(135deg,var(--cr),var(--ac));color:#fff;padding:10px 18px;font-size:13px;border-radius:10px;border:none;cursor:pointer;font-family:'Tiro Bangla',serif;font-weight:bold;transition:all .3s;}
+.bpr:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(230,57,70,.35);}
+
+/* DEPOSIT CARD */
+.dc{background:var(--cb);border:1px solid rgba(255,215,0,.2);border-radius:13px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;animation:si .4s ease;}
+@keyframes si{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:none;}}
+.dc.dn{border-color:rgba(0,200,0,.18);opacity:.65;}
+.dc-ic{font-size:24px;flex-shrink:0;}
+.dc-if{flex:1;}
+.dc-if h4{font-size:13px;font-weight:bold;margin-bottom:3px;}
+.dc-if p{font-size:11px;color:var(--mt);line-height:1.7;}
+.dc-trx{font-family:'Orbitron',monospace;font-size:10px;color:var(--gd);margin-top:2px;}
+.dc-tm{font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;}
+.dc-ac{display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+.nbdg{background:var(--ac);color:#fff;font-size:8px;padding:2px 6px;border-radius:20px;margin-left:6px;animation:pulse 2s infinite;}
+
+/* FORM */
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:11px;color:var(--mt);margin-bottom:4px;}
+.fg input,.fg textarea,.fg select{width:100%;padding:10px 12px;background:rgba(10,3,3,.9);border:1px solid rgba(180,20,20,.28);border-radius:9px;color:var(--tx);font-family:'Tiro Bangla',serif;font-size:13px;outline:none;transition:border-color .3s;}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--gd);}
+.fg textarea{resize:vertical;min-height:70px;}
+.fg select option{background:#0a0005;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+
+/* PLAN CARD */
+.pc{background:var(--cb);border:1px solid rgba(180,20,20,.2);border-radius:12px;padding:16px;margin-bottom:11px;}
+.pc.pp{border-color:rgba(255,215,0,.3);}
+.pc-hd{display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);}
+
+/* TOGGLE */
+.tw{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.tg{width:38px;height:21px;border-radius:11px;background:rgba(100,20,20,.5);border:1px solid rgba(180,20,20,.3);cursor:pointer;position:relative;transition:background .3s;flex-shrink:0;}
+.tg.on{background:rgba(0,120,0,.5);border-color:rgba(0,200,0,.4);}
+.tg::after{content:'';position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .3s;}
+.tg.on::after{transform:translateX(17px);}
+
+/* NOTICE */
+.nb{background:linear-gradient(135deg,rgba(100,0,0,.4),rgba(40,0,70,.3));border:1px solid rgba(255,215,0,.2);border-radius:11px;padding:11px 14px;margin-bottom:16px;display:flex;align-items:center;gap:9px;font-size:12px;}
+.nb-tx{flex:1;color:var(--gd);}
+.np{background:rgba(100,0,0,.18);border:1px solid rgba(255,215,0,.15);border-radius:9px;padding:11px 14px;font-size:12px;color:var(--gd);margin-top:8px;min-height:42px;}
+
+/* USER DETAIL */
+.ud-av{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--cr),var(--ac));display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 8px;border:2px solid rgba(255,215,0,.3);}
+.ud-gr{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.ud-it{background:rgba(15,5,5,.8);border:1px solid rgba(180,20,20,.15);border-radius:8px;padding:8px 10px;}
+.ud-lb{font-size:9px;color:var(--mt);margin-bottom:2px;}
+.ud-vl{font-size:12px;color:var(--tx);}
+
+/* PASSWORD REVEAL */
+.pass-row{display:flex;align-items:center;gap:6px;}
+.pass-val{font-family:'Orbitron',monospace;font-size:11px;color:var(--ac);letter-spacing:1px;}
+.pass-eye{background:none;border:none;color:var(--mt);cursor:pointer;font-size:14px;padding:2px;}
+
+/* MODAL */
+.mo{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:18px;}
+.mo.on{display:flex;animation:fd .25s ease;}
+@keyframes fd{from{opacity:0;}to{opacity:1;}}
+.mo-bx{background:rgba(8,2,2,.98);border:1px solid rgba(180,20,20,.45);border-radius:20px;padding:22px;width:100%;max-width:420px;animation:pop .38s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto;}
+.mo-bx h3{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--gd);margin-bottom:14px;text-align:center;}
+.mo-cl{float:right;background:none;border:none;color:var(--mt);font-size:17px;cursor:pointer;}
+.mo-cl:hover{color:var(--ac);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:linear-gradient(135deg,rgba(20,5,5,.97),rgba(60,10,10,.97));border:1px solid rgba(230,57,70,.35);color:var(--tx);padding:10px 20px;border-radius:26px;font-size:12px;z-index:999;backdrop-filter:blur(20px);box-shadow:0 10px 35px rgba(180,0,0,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+.toast.on{transform:translateX(-50%) translateY(0);}
+
+/* TWO COL */
+.tc{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--cr);border-radius:2px;}
+
+.mob-btn{display:none;position:fixed;top:12px;left:12px;z-index:200;background:rgba(10,2,2,.9);border:1px solid rgba(180,20,20,.3);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:17px;color:var(--gd);}
+@media(max-width:768px){
+  .mob-btn{display:block;}
+  .sb{transform:translateX(-100%);}
+  .sb.on{transform:none;}
+  .main{margin-left:0;padding:55px 13px 16px;}
+  .fr,.tc{grid-template-columns:1fr;}
+  .ud-gr{grid-template-columns:1fr;}
+  .sr{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<!-- LOGIN -->
+<div class="ls" id="LS">
+  <div class="lb">
+    <div class="lb-logo">☁️ Akatsuki</div>
+    <div class="lb-sub">ADMIN PANEL</div>
+    <input type="text" id="aU" placeholder="👤 Username" autocomplete="off">
+    <input type="password" id="aP" placeholder="🔒 Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="lb-btn" onclick="login()">🔐 প্রবেশ করুন</button>
+    <div class="lb-err" id="lerr">⚠️ ভুল username বা password!</div>
+  </div>
+</div>
+
+<button class="mob-btn" onclick="document.getElementById('SB').classList.toggle('on')">☰</button>
+
+<!-- SIDEBAR -->
+<nav class="sb" id="SB">
+  <div class="sb-hd">
+    <div class="sb-lg"><span>☁️</span>AKATSUKI</div>
+    <span class="sb-bd">ADMIN CONTROL</span>
+  </div>
+  <div class="ns">DASHBOARD</div>
+  <div class="ni on" onclick="nav('dashboard',this)"><span class="ic">📊</span>ড্যাশবোর্ড</div>
+  <div class="ns">ব্যবস্থাপনা</div>
+  <div class="ni" onclick="nav('deposits',this)"><span class="ic">💰</span>ডিপোজিট<span class="bdg" id="dep-bdg">0</span></div>
+  <div class="ni" onclick="nav('users',this)"><span class="ic">👥</span>ইউজার ম্যানেজমেন্ট</div>
+  <div class="ni" onclick="nav('withdrawals',this)"><span class="ic">⬆️</span>উত্তোলন</div>
+  <div class="ns">কনটেন্ট</div>
+  <div class="ni" onclick="nav('plans',this)"><span class="ic">📦</span>প্ল্যান ম্যানেজমেন্ট</div>
+  <div class="ni" onclick="nav('refer-ms',this)"><span class="ic">🏆</span>রেফার মাইলস্টোন</div>
+  <div class="ni" onclick="nav('checkin',this)"><span class="ic">📅</span>চেক-ইন / বক্স</div>
+  <div class="ni" onclick="nav('notice',this)"><span class="ic">📢</span>নোটিস পাঠান</div>
+  <div class="ni" onclick="nav('support',this)"><span class="ic">🎧</span>সাপোর্ট কন্টাক্ট</div>
+  <div class="ni" onclick="nav('payment-cfg',this)"><span class="ic">💳</span>পেমেন্ট সেটিংস</div>
+  <div class="ns">সিস্টেম</div>
+  <div class="ni" onclick="nav('admin-cfg',this)"><span class="ic">⚙️</span>Admin সেটিংস</div>
+  <div class="sb-ft">Akatsuki Admin v3.0<br><span class="lo" onclick="logout()">🚪 লগআউট</span></div>
+</nav>
+
+<main class="main" id="MW" style="display:none">
+
+<!-- ══ DASHBOARD ══ -->
+<div class="pg on" id="pg-dashboard">
+  <div class="tb">
+    <h1>📊 ড্যাশবোর্ড</h1>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:11px;color:var(--mt)" id="clk"></span>
+      <button class="btn br" onclick="logout()" style="padding:7px 13px">🚪 লগআউট</button>
+    </div>
+  </div>
+  <div class="nb" id="aN" style="display:none">
+    <span style="font-size:17px" id="aN-ic">📢</span>
+    <span class="nb-tx" id="aN-tx"></span>
+    <span style="cursor:pointer;color:var(--mt)" onclick="this.closest('.nb').style.display='none'">✕</span>
+  </div>
+  <div class="sr">
+    <div class="sc bl"><div class="sc-i">👥</div><div class="sc-v" id="s-u">0</div><div class="sc-l">মোট ইউজার</div></div>
+    <div class="sc gn"><div class="sc-i">✅</div><div class="sc-v" id="s-a">0</div><div class="sc-l">সক্রিয় ইউজার</div></div>
+    <div class="sc gd"><div class="sc-i">💰</div><div class="sc-v" id="s-d">0</div><div class="sc-l">মোট ডিপোজিট (৳)</div></div>
+    <div class="sc rd"><div class="sc-i">⏳</div><div class="sc-v" id="s-p">0</div><div class="sc-l">পেন্ডিং</div></div>
+    <div class="sc pp"><div class="sc-i">📦</div><div class="sc-v" id="s-pl">0</div><div class="sc-l">সক্রিয় প্ল্যান</div></div>
+  </div>
+  <div class="cd">
+    <div class="cd-hd"><h2>💰 সাম্প্রতিক ডিপোজিট</h2><span style="font-size:11px;color:var(--bl);cursor:pointer" onclick="nav('deposits',document.querySelectorAll('.ni')[3])">সব →</span></div>
+    <table><thead><tr><th>ইউজার</th><th>পরিমাণ</th><th>TrxID</th><th>মেথড</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody id="d-dep"></tbody></table>
+  </div>
+  <div class="cd">
+    <div class="cd-hd"><h2>👥 সাম্প্রতিক ইউজার</h2></div>
+    <table><thead><tr><th>নাম</th><th>নম্বর</th><th>স্ট্যাটাস</th><th>প্ল্যান</th><th>ব্যালান্স</th></tr></thead><tbody id="d-usr"></tbody></table>
+  </div>
+</div>
+
+<!-- ══ DEPOSITS ══ -->
+<div class="pg" id="pg-deposits">
+  <div class="tb"><h1>💰 ডিপোজিট রিকোয়েস্ট</h1></div>
+  <div id="dep-list"></div>
+</div>
+
+<!-- ══ USERS ══ -->
+<div class="pg" id="pg-users">
+  <div class="tb">
+    <h1>👥 ইউজার ম্যানেজমেন্ট</h1>
+    <button class="btn bgd" onclick="openMo('mo-adduser')">➕ ইউজার যোগ</button>
+  </div>
+  <div class="cd">
+    <div class="cd-hd">
+      <h2>সকল ইউজার</h2>
+      <input placeholder="🔍 নাম/নম্বর/আইডি..." oninput="filterUsers(this.value)" style="padding:6px 10px;background:rgba(10,3,3,.9);border:1px solid rgba(180,20,20,.28);border-radius:8px;color:var(--tx);font-size:12px;outline:none;width:170px;font-family:'Tiro Bangla',serif;">
+    </div>
+    <table><thead><tr><th>আইডি</th><th>নাম</th><th>📱 নম্বর</th><th>🔒 পাসওয়ার্ড</th><th>স্ট্যাটাস</th><th>প্ল্যান</th><th>ব্যালান্স</th><th>অ্যাকশন</th></tr></thead><tbody id="u-tb"></tbody></table>
+  </div>
+</div>
+
+<!-- ══ WITHDRAWALS ══ -->
+<div class="pg" id="pg-withdrawals">
+  <div class="tb"><h1>⬆️ উত্তোলন রিকোয়েস্ট</h1></div>
+  <div class="cd">
+    <div class="cd-hd"><h2>পেন্ডিং উত্তোলন</h2></div>
+    <table><thead><tr><th>ইউজার</th><th>নম্বর</th><th>পরিমাণ</th><th>মেথড</th><th>সময়</th><th>অ্যাকশন</th></tr></thead><tbody id="wd-tb"></tbody></table>
+  </div>
+</div>
+
+<!-- ══ PLANS ══ -->
+<div class="pg" id="pg-plans">
+  <div class="tb">
+    <h1>📦 প্ল্যান ম্যানেজমেন্ট</h1>
+    <button class="btn bg" onclick="openMo('mo-addplan')">➕ নতুন প্ল্যান</button>
+  </div>
+  <p style="font-size:12px;color:var(--mt);margin-bottom:13px;">⚡ দৈনিক আয় = সারপ্রাইজ বক্সের প্রতিদিনের রিওয়ার্ড।</p>
+  <div id="plans-wrap"></div>
+</div>
+
+<!-- ══ REFER MILESTONES ══ -->
+<div class="pg" id="pg-refer-ms">
+  <div class="tb"><h1>🏆 রেফার মাইলস্টোন</h1></div>
+  <div class="cd-bd" style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:20px;">
+    <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(180,20,20,.13);"><h2 style="font-size:13px;color:var(--gd)">৪টি মাইলস্টোন (১–২০ রেফার)</h2></div>
+    <div id="ms-inp"></div>
+    <div class="fg"><label>রেফার বোনাস % (প্রতি প্ল্যান ক্রয়ে)</label><input type="number" id="r-pct" value="10" min="0" max="100"></div>
+    <div class="fg"><label>রেফার পেজ ট্যাগলাইন</label><input type="text" id="r-tag" value="বন্ধু এই লিংক দিয়ে যোগ দিলে ও প্ল্যান কিনলে আপনি ১০% বোনাস পাবেন"></div>
+    <button class="bpr" onclick="saveMS()">💾 সেভ করুন</button>
+  </div>
+</div>
+
+<!-- ══ CHECKIN ══ -->
+<div class="pg" id="pg-checkin">
+  <div class="tb"><h1>📅 চেক-ইন ও সারপ্রাইজ বক্স</h1></div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:14px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">৭ দিনের চেক-ইন বোনাস (৳)</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;" id="ci-inp"></div>
+    <div class="tw" style="margin-top:11px;"><div class="tg on" onclick="this.classList.toggle('on')"></div><span>চেক-ইন চালু</span></div>
+  </div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:14px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">🎁 সারপ্রাইজ বক্স ম্যাপিং</h2></div>
+    <div id="box-map"></div>
+    <div class="tw" style="margin-top:11px;"><div class="tg on" onclick="this.classList.toggle('on')"></div><span>সারপ্রাইজ বক্স চালু</span></div>
+  </div>
+  <button class="bpr" onclick="saveCI()">💾 সেভ করুন</button>
+</div>
+
+<!-- ══ NOTICE ══ -->
+<div class="pg" id="pg-notice">
+  <div class="tb"><h1>📢 নোটিস পাঠান</h1></div>
+  <div class="tc">
+    <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;">
+      <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">নতুন নোটিস</h2></div>
+      <div class="fg"><label>আইকন</label><input type="text" id="n-ic" value="📢"></div>
+      <div class="fg"><label>বার্তা</label><textarea id="n-tx" rows="4" placeholder="বার্তা লিখুন..." oninput="prevN()"></textarea></div>
+      <div class="fg"><label>ধরন</label><select id="n-tp" onchange="prevN()"><option value="info">ℹ️ তথ্য</option><option value="warn">⚠️ সতর্কতা</option><option value="ok">✅ সফলতা</option><option value="hot">🚨 জরুরি</option></select></div>
+      <button class="bpr" onclick="pubN()">📢 প্রকাশ করুন</button>
+      <button class="btn br" onclick="clrN()" style="margin-left:8px;padding:9px 14px;font-size:13px;border-radius:9px;">🗑️ মুছুন</button>
+    </div>
+    <div>
+      <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:17px;margin-bottom:13px;">
+        <div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">প্রিভিউ</h2></div>
+        <div style="font-size:11px;color:var(--mt);margin-bottom:6px;">হোম পেজে এভাবে দেখাবে:</div>
+        <div class="np" id="n-pv">প্রিভিউ...</div>
+      </div>
+      <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:17px;">
+        <div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">ইতিহাস</h2></div>
+        <div id="n-hist" style="font-size:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUPPORT ══ -->
+<div class="pg" id="pg-support">
+  <div class="tb"><h1>🎧 সাপোর্ট কন্টাক্ট</h1></div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:13px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:#25D366">💬 WhatsApp</h2></div>
+    <div class="fr"><div class="fg"><label>নম্বর (আন্তর্জাতিক)</label><input type="text" id="wa-n" value="8801723268974"></div><div class="fg"><label>প্রদর্শিত নম্বর</label><input type="text" id="wa-d" value="+880 1723-268974"></div></div>
+    <div class="fg"><label>বিবরণ</label><input type="text" id="wa-desc" value="দ্রুত সাড়া পেতে মেসেজ করুন"></div>
+  </div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:13px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:#0088CC">✈️ Telegram</h2></div>
+    <div class="fr"><div class="fg"><label>Username</label><input type="text" id="tg-u" value="Akatsuki_support"></div><div class="fg"><label>প্রদর্শিত নাম</label><input type="text" id="tg-d" value="@Akatsuki_support"></div></div>
+  </div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:13px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">🕐 সাপোর্ট সময়</h2></div>
+    <div class="fr"><div class="fg"><label>শুরু</label><input type="text" id="s-fr" value="সকাল ৯টা"></div><div class="fg"><label>শেষ</label><input type="text" id="s-to" value="রাত ১১টা"></div></div>
+  </div>
+  <button class="bpr" onclick="saveSup()">💾 সেভ করুন</button>
+</div>
+
+<!-- ══ PAYMENT CFG ══ -->
+<div class="pg" id="pg-payment-cfg">
+  <div class="tb"><h1>💳 পেমেন্ট সেটিংস</h1></div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:13px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">ডিপোজিট নম্বর</h2></div>
+    <div class="fr"><div class="fg"><label>Admin নম্বর</label><input type="text" id="pay-n" value="01723-268974"></div><div class="fg"><label>সর্বনিম্ন (৳)</label><input type="number" id="pay-mn" value="100"></div></div>
+    <div class="fg"><label>পেমেন্ট মেথড</label>
+      <div class="tw"><div class="tg on" onclick="this.classList.toggle('on')"></div><span>bKash</span></div>
+      <div class="tw"><div class="tg on" onclick="this.classList.toggle('on')"></div><span>Nagad</span></div>
+      <div class="tw"><div class="tg on" onclick="this.classList.toggle('on')"></div><span>Rocket</span></div>
+    </div>
+  </div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:13px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">উত্তোলন সেটিংস</h2></div>
+    <div class="fr"><div class="fg"><label>সর্বনিম্ন (৳)</label><input type="number" id="wd-mn" value="1000"></div><div class="fg"><label>সর্বোচ্চ (৳)</label><input type="number" id="wd-mx" value="10000"></div></div>
+  </div>
+  <button class="bpr" onclick="toast('✅ পেমেন্ট সেটিংস সেভ!')">💾 সেভ করুন</button>
+</div>
+
+<!-- ══ ADMIN CFG ══ -->
+<div class="pg" id="pg-admin-cfg">
+  <div class="tb"><h1>⚙️ Admin সেটিংস</h1></div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;margin-bottom:13px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">Admin লগইন পরিবর্তন</h2></div>
+    <div class="fg"><label>নতুন Username</label><input type="text" id="nu" placeholder="নতুন username"></div>
+    <div class="fg"><label>বর্তমান পাসওয়ার্ড</label><input type="password" id="cp" placeholder="বর্তমান পাসওয়ার্ড"></div>
+    <div class="fr"><div class="fg"><label>নতুন পাসওয়ার্ড</label><input type="password" id="np" placeholder="নতুন পাসওয়ার্ড"></div><div class="fg"><label>নিশ্চিত করুন</label><input type="password" id="cnp" placeholder="পাসওয়ার্ড নিশ্চিত"></div></div>
+    <button class="bpr" onclick="chgPass()">🔐 পরিবর্তন করুন</button>
+  </div>
+  <div style="background:var(--cb);border:1px solid rgba(180,20,20,.18);border-radius:14px;padding:18px;">
+    <div style="margin-bottom:13px;padding-bottom:9px;border-bottom:1px solid rgba(180,20,20,.12);"><h2 style="font-size:13px;color:var(--gd)">সাইট সেটিংস</h2></div>
+    <div class="fr"><div class="fg"><label>সাইটের নাম</label><input type="text" id="sn" value="Akatsuki"></div><div class="fg"><label>ট্যাগলাইন</label><input type="text" id="st" value="Investment Platform"></div></div>
+    <button class="bpr" onclick="toast('✅ সাইট সেটিংস সেভ!')">💾 সেভ করুন</button>
+  </div>
+</div>
+
+</main>
+
+<!-- MODALS -->
+<div class="mo" id="mo-ud">
+  <div class="mo-bx">
+    <button class="mo-cl" onclick="closeMo('mo-ud')">✕</button>
+    <h3>👤 ইউজার ডিটেইলস</h3>
+    <div style="text-align:center;margin-bottom:12px;">
+      <div class="ud-av">🧑</div>
+      <div style="font-size:14px;font-weight:bold" id="ud-nm"></div>
+      <div style="font-size:11px;color:var(--gd);font-family:'Orbitron',monospace" id="ud-id"></div>
+    </div>
+    <div class="ud-gr" id="ud-gr"></div>
+    <div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap;">
+      <button class="btn bb" onclick="togglePlan()">📦 প্ল্যান টগল</button>
+      <button class="btn" id="ud-dis" onclick="toggleDis()">🚫 ডিজেবল</button>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>ব্যালান্স পরিমাণ (৳)</label><input type="number" id="ud-amt" placeholder="পরিমাণ..." min="1"></div>
+    <div style="display:flex;gap:7px;">
+      <button class="btn bg" onclick="adjBal(1)" style="flex:1;padding:8px;font-size:12px">➕ যোগ</button>
+      <button class="btn br" onclick="adjBal(-1)" style="flex:1;padding:8px;font-size:12px">➖ মাইনাস</button>
+    </div>
+  </div>
+</div>
+
+<div class="mo" id="mo-adduser">
+  <div class="mo-bx">
+    <button class="mo-cl" onclick="closeMo('mo-adduser')">✕</button>
+    <h3>➕ নতুন ইউজার</h3>
+    <div class="fg"><label>নাম</label><input type="text" id="nu-n" placeholder="পূর্ণ নাম"></div>
+    <div class="fg"><label>ফোন নম্বর</label><input type="tel" id="nu-ph" placeholder="01XXXXXXXXX"></div>
+    <div class="fg"><label>পাসওয়ার্ড</label><input type="text" id="nu-pw" placeholder="পাসওয়ার্ড"></div>
+    <div class="fg"><label>প্রাথমিক ব্যালান্স (৳)</label><input type="number" id="nu-bl" value="0"></div>
+    <button class="bpr" onclick="addUser()">✅ যোগ করুন</button>
+  </div>
+</div>
+
+<div class="mo" id="mo-addplan">
+  <div class="mo-bx">
+    <button class="mo-cl" onclick="closeMo('mo-addplan')">✕</button>
+    <h3>➕ নতুন প্ল্যান</h3>
+    <div class="fg"><label>ইমোজি</label><input type="text" id="np-em" value="⭐"></div>
+    <div class="fr"><div class="fg"><label>বিনিয়োগ (৳)</label><input type="number" id="np-pr" placeholder="যেমন: 5000"></div><div class="fg"><label>দৈনিক আয় / বক্স (৳)</label><input type="number" id="np-dy" placeholder="যেমন: 250"></div></div>
+    <div class="fr"><div class="fg"><label>মেয়াদ (দিন)</label><input type="number" id="np-ds" value="30"></div><div class="fg"><label>জনপ্রিয়?</label><select id="np-pp"><option value="0">না</option><option value="1">হ্যাঁ ⭐</option></select></div></div>
+    <button class="bpr" onclick="addPlan()">✅ যোগ করুন</button>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ════════ KEYS (সাইটের মতো একই) ════════
+const K_USERS   = 'akt_all_users';
+const K_DEPS    = 'akt_deposits';
+const K_WDS     = 'akt_wds';
+const K_NOTICE  = 'akt_notice';
+const K_NHIST   = 'akt_n_hist';
+const K_CI      = 'akt_ci';
+const K_MS      = 'akt_ms';
+const K_PLANS   = 'akt_plans';
+const K_ADMIN   = 'akt_admin';
+
+// ════════ HELPERS ════════
+const ge = id => document.getElementById(id);
+const gj = k  => JSON.parse(localStorage.getItem(k)||'null');
+const sj = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+function toast(msg){const t=ge('toastEl');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3200);}
+function openMo(id){ge(id).classList.add('on');}
+function closeMo(id){ge(id).classList.remove('on');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.target.classList.remove('on');});
+
+// ════════ DEFAULT DATA ════════
+let ADMIN   = gj(K_ADMIN) || {user:'admin',pass:'admin123'};
+let PLANS   = gj(K_PLANS) || [{id:1,emoji:'🌱',price:1000,daily:70,days:30,popular:false},{id:2,emoji:'🔥',price:1500,daily:100,days:30,popular:true},{id:3,emoji:'💎',price:2000,daily:120,days:30,popular:false},{id:4,emoji:'👑',price:3000,daily:160,days:30,popular:false}];
+let MS      = gj(K_MS)    || [{count:5,reward:200,icon:'🥉'},{count:10,reward:500,icon:'🥈'},{count:15,reward:799,icon:'🥇'},{count:20,reward:1099,icon:'👑'}];
+let CI      = gj(K_CI)    || [5,7,10,14,19,25,32];
+let NOTICE  = gj(K_NOTICE);
+let NHIST   = gj(K_NHIST) || [];
+let curUID  = null;
+
+// ════════ READ LIVE DATA ════════
+function getUsers(){ return gj(K_USERS)||[]; }
+function getDeps(){  return gj(K_DEPS) ||[]; }
+function getWDs(){   return gj(K_WDS)  ||[]; }
+
+function saveUsers(u){ sj(K_USERS,u); }
+function saveDeps(d){  sj(K_DEPS,d);  }
+function saveWDs(w){   sj(K_WDS,w);   }
+
+// ════════ AUTH ════════
+function login(){
+  const u=ge('aU').value.trim(), p=ge('aP').value;
+  if(u===ADMIN.user && p===ADMIN.pass){
+    ge('LS').style.display='none';
+    ge('MW').style.display='block';
+    initDash(); tickClk(); setInterval(tickClk,1000);
+    if(NOTICE) showAN();
+  } else { const e=ge('lerr'); e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
+}
+function logout(){ge('LS').style.display='flex';ge('MW').style.display='none';}
+function chgPass(){
+  const cp=ge('cp').value, np_=ge('np').value, cn=ge('cnp').value, nu_=ge('nu').value.trim();
+  if(cp!==ADMIN.pass){toast('⚠️ বর্তমান পাসওয়ার্ড ভুল!');return;}
+  if(np_&&np_!==cn){toast('⚠️ পাসওয়ার্ড মিলছে না!');return;}
+  if(np_) ADMIN.pass=np_; if(nu_) ADMIN.user=nu_;
+  sj(K_ADMIN,ADMIN); toast('✅ Admin তথ্য আপডেট!');
+}
+
+// ════════ NAV ════════
+function nav(pg,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  ge('pg-'+pg).classList.add('on');
+  if(el) el.classList.add('on');
+  const m={dashboard:initDash,deposits:renderDeps,users:()=>renderUsers(),withdrawals:renderWDs,plans:renderPlans,'refer-ms':renderMS,checkin:renderCI,notice:renderNHist};
+  if(m[pg]) m[pg]();
+  if(window.innerWidth<=768) ge('SB').classList.remove('on');
+}
+function tickClk(){const e=ge('clk');if(e)e.textContent=new Date().toLocaleTimeString('bn-BD');}
+
+// ════════ DASHBOARD ════════
+function initDash(){
+  const U=getUsers(), D=getDeps(), W=getWDs();
+  const active = U.filter(u=>u.hasActivePlan&&!u.disabled).length;
+  const tdep   = D.filter(d=>d.status==='done').reduce((a,b)=>a+b.amount,0);
+  const pend   = D.filter(d=>d.status==='pending').length + W.filter(w=>w.status==='pending').length;
+  ge('s-u').textContent=U.length;
+  ge('s-a').textContent=active;
+  ge('s-d').textContent=tdep.toLocaleString();
+  ge('s-p').textContent=pend;
+  ge('s-pl').textContent=U.filter(u=>u.hasActivePlan).length;
+  ge('dep-bdg').textContent=D.filter(d=>d.status==='pending').length;
+
+  // recent deposits
+  const dt=ge('d-dep'); dt.innerHTML='';
+  D.slice(-6).reverse().forEach(d=>{
+    dt.innerHTML+=`<tr>
+      <td><b>${d.userName}</b><br><span style="font-size:10px;color:var(--mt)">${d.phone}</span></td>
+      <td style="color:var(--gd);font-family:'Orbitron',monospace">৳${d.amount.toLocaleString()}</td>
+      <td style="font-size:10px;color:var(--mt)">${d.trxId}</td>
+      <td>${d.method||'—'}</td>
+      <td>${d.status==='done'?'<span style="color:var(--gn)">✅ সম্পন্ন</span>':d.status==='rejected'?'<span style="color:var(--ac)">❌ বাতিল</span>':'<span style="color:var(--gd)"><span class="spin"></span>পেন্ডিং</span>'}</td>
+      <td>${d.status==='pending'?`<button class="btn bg" onclick="appDep('${d.id}')">✅</button> <button class="btn br" onclick="rejDep('${d.id}')" style="margin-left:3px">❌</button>`:'—'}</td>
+    </tr>`;
+  });
+
+  // recent users
+  const ut=ge('d-usr'); ut.innerHTML='';
+  U.slice(-6).reverse().forEach(u=>{
+    const proc=D.some(d=>d.userId==='AKT-'+u.uid&&d.status==='pending');
+    ut.innerHTML+=`<tr>
+      <td><div style="display:flex;align-items:center;gap:5px">
+        ${proc?'<span class="spin"></span>':('<span class="dot '+(u.hasActivePlan&&!u.disabled?'dg':'dr')+'"></span>')}
+        <span style="cursor:pointer;color:var(--bl)" onclick="openUD('${u.uid}')">${u.name}</span>
+      </div></td>
+      <td style="font-family:'Orbitron',monospace;font-size:10px">${u.phone}</td>
+      <td>${u.disabled?'<span style="color:var(--ac)">🚫</span>':u.hasActivePlan?'<span style="color:var(--gn)">✅</span>':'<span style="color:var(--mt)">❌</span>'}</td>
+      <td style="font-size:11px">${u.planName||'কোনো প্ল্যান নেই'}</td>
+      <td style="color:var(--gd);font-family:'Orbitron',monospace">৳${(u.balance||0).toLocaleString()}</td>
+    </tr>`;
+  });
+}
+
+// ════════ DEPOSITS ════════
+function renderDeps(){
+  const c=ge('dep-list'); c.innerHTML='';
+  const D=getDeps();
+  const pend=D.filter(d=>d.status==='pending');
+  const done=D.filter(d=>d.status!=='pending');
+  if(!pend.length) c.innerHTML='<div style="text-align:center;color:var(--mt);padding:28px">✅ কোনো পেন্ডিং নেই</div>';
+  pend.forEach(d=>{c.innerHTML+=`<div class="dc">
+    <div class="dc-ic">💰</div>
+    <div class="dc-if">
+      <h4>${d.userName} <span class="nbdg">NEW</span></h4>
+      <p>📱 ${d.phone} &nbsp;|&nbsp; 💳 ${d.method||'—'}</p>
+      <p>💵 <strong style="color:var(--gd)">৳${d.amount.toLocaleString()}</strong></p>
+      <div class="dc-trx">TrxID: ${d.trxId}</div>
+      <div class="dc-tm">⏰ ${d.time}</div>
+    </div>
+    <div class="dc-ac">
+      <button class="btn bg" onclick="appDep('${d.id}')">✅ অনুমোদন</button>
+      <button class="btn br" onclick="rejDep('${d.id}')">❌ বাতিল</button>
+    </div>
+  </div>`;});
+  if(done.length){
+    c.innerHTML+=`<div style="font-size:12px;color:var(--mt);margin:14px 0 8px">ইতিহাস</div>`;
+    done.slice().reverse().slice(0,10).forEach(d=>{c.innerHTML+=`<div class="dc dn">
+      <div class="dc-ic">${d.status==='done'?'✅':'❌'}</div>
+      <div class="dc-if"><h4>${d.userName}</h4>
+      <p>৳${d.amount.toLocaleString()} | ${d.method||'—'} | ${d.trxId}</p>
+      <div class="dc-tm">${d.time}</div></div>
+    </div>`;});
+  }
+}
+function appDep(id){
+  const D=getDeps(); const d=D.find(x=>x.id===id); if(!d) return;
+  d.status='done';
+  // ব্যালান্স যোগ
+  const U=getUsers(); const u=U.find(x=>'AKT-'+x.uid===d.userId);
+  if(u){ u.balance=(u.balance||0)+d.amount; saveUsers(U); }
+  saveDeps(D); renderDeps(); initDash();
+  toast(`✅ ৳${d.amount.toLocaleString()} অনুমোদন — ${d.userName} এর ব্যালান্সে যোগ!`);
+}
+function rejDep(id){
+  if(!confirm('বাতিল করবেন?')) return;
+  const D=getDeps(); const d=D.find(x=>x.id===id); if(!d) return;
+  d.status='rejected'; saveDeps(D); renderDeps(); initDash();
+  toast('❌ ডিপোজিট বাতিল');
+}
+
+// ════════ USERS ════════
+function renderUsers(filter=''){
+  const tb=ge('u-tb'); tb.innerHTML='';
+  let U=getUsers();
+  if(filter) U=U.filter(u=>u.name?.includes(filter)||u.phone?.includes(filter)||u.uid?.includes(filter));
+  const D=getDeps();
+  U.forEach(u=>{
+    const proc=D.some(d=>d.userId==='AKT-'+u.uid&&d.status==='pending');
+    tb.innerHTML+=`<tr>
+      <td style="font-family:'Orbitron',monospace;font-size:10px;color:var(--gd)">AKT-${u.uid}</td>
+      <td><div style="display:flex;align-items:center;gap:5px">
+        ${proc?'<span class="spin"></span>':('<span class="dot '+(u.hasActivePlan&&!u.disabled?'dg':'dr')+'"></span>')}
+        <span style="cursor:pointer;color:var(--bl)" onclick="openUD('${u.uid}')">${u.name}</span>
+      </div></td>
+      <td style="font-family:'Orbitron',monospace;font-size:11px">${u.phone}</td>
+      <td>
+        <div class="pass-row">
+          <span class="pass-val" id="pw-${u.uid}">••••••••</span>
+          <button class="pass-eye" onclick="togglePW('${u.uid}','${u.pass||''}')">👁️</button>
+        </div>
+      </td>
+      <td>${proc?'<span style="color:var(--gd)"><span class="spin"></span>প্রসেসিং</span>':u.disabled?'<span style="color:var(--ac)">🚫</span>':u.hasActivePlan?'<span style="color:var(--gn)">✅ সক্রিয়</span>':'<span style="color:var(--mt)">❌</span>'}</td>
+      <td style="font-size:11px">${u.planName||'কোনো প্ল্যান নেই'}<br><span style="font-size:10px;color:var(--gd)">${u.hasActivePlan?'🎁 ৳'+u.planDaily+'/দিন':''}</span></td>
+      <td style="color:var(--gd);font-family:'Orbitron',monospace">৳${(u.balance||0).toLocaleString()}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn bb" onclick="openUD('${u.uid}')">👁️</button>
+          <button class="btn ${u.disabled?'bg':'br'}" onclick="qDis('${u.uid}')">${u.disabled?'✅':'🚫'}</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+}
+function togglePW(uid, pw){
+  const el=ge('pw-'+uid);
+  if(!el) return;
+  el.textContent = el.textContent==='••••••••' ? pw : '••••••••';
+}
+function filterUsers(v){renderUsers(v);}
+function openUD(uid){
+  const U=getUsers(); const u=U.find(x=>x.uid===uid); if(!u) return; curUID=uid;
+  ge('ud-nm').textContent=u.name; ge('ud-id').textContent='AKT-'+u.uid;
+  const D=getDeps(); const proc=D.some(d=>d.userId==='AKT-'+uid&&d.status==='pending');
+  ge('ud-gr').innerHTML=`
+    <div class="ud-it"><div class="ud-lb">📱 নম্বর</div><div class="ud-vl">${u.phone}</div></div>
+    <div class="ud-it"><div class="ud-lb">🔒 পাসওয়ার্ড</div>
+      <div class="ud-vl pass-row">
+        <span class="pass-val" id="mo-pw">••••••••</span>
+        <button class="pass-eye" onclick="togglePW('mo-pw-btn','${u.pass||''}')">👁️</button>
+      </div>
+    </div>
+    <div class="ud-it"><div class="ud-lb">💰 ব্যালান্স</div><div class="ud-vl" style="color:var(--gd)">৳${(u.balance||0).toLocaleString()}</div></div>
+    <div class="ud-it"><div class="ud-lb">📦 প্ল্যান</div><div class="ud-vl">${u.planName||'নেই'}</div></div>
+    <div class="ud-it"><div class="ud-lb">🎁 বক্স রিওয়ার্ড</div><div class="ud-vl" style="color:var(--gd)">${u.hasActivePlan?'৳'+u.planDaily+'/দিন':'🔒'}</div></div>
+    <div class="ud-it"><div class="ud-lb">✅ মোট আয়</div><div class="ud-vl" style="color:var(--gn)">৳${(u.totalEarned||0).toLocaleString()}</div></div>
+    <div class="ud-it"><div class="ud-lb">📅 যোগদান</div><div class="ud-vl">${u.joined||'—'}</div></div>
+    <div class="ud-it"><div class="ud-lb">অবস্থা</div><div class="ud-vl">${proc?'<span style="color:var(--gd)">⏳ প্রসেসিং</span>':u.disabled?'<span style="color:var(--ac)">🚫 ডিজেবল</span>':u.hasActivePlan?'<span style="color:var(--gn)">✅ সক্রিয়</span>':'❌ নিষ্ক্রিয়'}</div></div>
+  `;
+  // password eye fix for modal
+  const eyeBtn=ge('ud-gr').querySelector('.pass-eye');
+  if(eyeBtn) eyeBtn.onclick=()=>{const el=ge('mo-pw');el.textContent=el.textContent==='••••••••'?u.pass:'••••••••';};
+  const db=ge('ud-dis');
+  db.textContent=u.disabled?'✅ সক্রিয় করুন':'🚫 ডিজেবল';
+  db.className='btn '+(u.disabled?'bg':'br');
+  ge('ud-amt').value='';
+  openMo('mo-ud');
+}
+function adjBal(sign){
+  const amt=parseFloat(ge('ud-amt').value);
+  if(!amt||amt<=0){toast('⚠️ সঠিক পরিমাণ দিন');return;}
+  const U=getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
+  if(sign===-1&&(u.balance||0)<amt){toast('⚠️ ব্যালান্স পর্যাপ্ত নেই!');return;}
+  u.balance=Math.max(0,(u.balance||0)+amt*sign);
+  saveUsers(U); openUD(curUID); renderUsers();
+  toast(sign===1?`✅ ৳${amt.toLocaleString()} যোগ!`:`➖ ৳${amt.toLocaleString()} কাটা!`);
+}
+function togglePlan(){
+  const U=getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
+  u.hasActivePlan=!u.hasActivePlan;
+  if(!u.hasActivePlan){u.planName='কোনো প্ল্যান নেই';u.planPrice=0;u.planDaily=0;}
+  else u.planName='ম্যানুয়াল প্ল্যান';
+  saveUsers(U); openUD(curUID); renderUsers();
+  toast(`📦 প্ল্যান ${u.hasActivePlan?'সক্রিয়':'নিষ্ক্রিয়'}!`);
+}
+function toggleDis(){
+  const U=getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
+  u.disabled=!u.disabled; saveUsers(U); openUD(curUID); renderUsers();
+  toast(`${u.disabled?'🚫':'✅'} ${u.name} ${u.disabled?'ডিজেবল':'সক্রিয়'}!`);
+}
+function qDis(uid){
+  const U=getUsers(); const u=U.find(x=>x.uid===uid); if(!u) return;
+  u.disabled=!u.disabled; saveUsers(U); renderUsers();
+  toast(`${u.disabled?'🚫':'✅'} ${u.name} ${u.disabled?'ডিজেবল':'সক্রিয়'}!`);
+}
+function addUser(){
+  const n=ge('nu-n').value.trim(), ph=ge('nu-ph').value.trim(), pw=ge('nu-pw').value, bl=parseFloat(ge('nu-bl').value)||0;
+  if(!n||!ph){toast('⚠️ নাম ও নম্বর দিন');return;}
+  const U=getUsers();
+  if(U.find(x=>x.phone===ph)){toast('⚠️ এই নম্বরে আইডি আছে!');return;}
+  const uid=String(Math.floor(1000+Math.random()*9000));
+  U.push({name:n,phone:ph,pass:pw||'123456',uid,balance:bl,hasActivePlan:false,hasActiveRefer:false,planName:'কোনো প্ল্যান নেই',planPrice:0,planDaily:0,joined:new Date().toLocaleDateString('bn-BD'),totalEarned:bl,referredBy:''});
+  saveUsers(U); closeMo('mo-adduser'); renderUsers();
+  toast(`✅ ${n} (AKT-${uid}) যোগ!`);
+}
+
+// ════════ WITHDRAWALS ════════
+function renderWDs(){
+  const tb=ge('wd-tb'); tb.innerHTML='';
+  const W=getWDs();
+  if(!W.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--mt);padding:26px">কোনো উত্তোলন নেই</td></tr>';return;}
+  W.forEach(w=>{tb.innerHTML+=`<tr>
+    <td>${w.userName||'—'}<br><span style="font-size:10px;color:var(--mt)">${w.userId||''}</span></td>
+    <td>${w.phone||'—'}</td>
+    <td style="color:var(--gd);font-family:'Orbitron',monospace">৳${(w.amount||0).toLocaleString()}</td>
+    <td>${w.method||'—'}</td>
+    <td style="font-size:11px;color:var(--mt)">${w.time||''}</td>
+    <td>${w.status==='pending'?`<button class="btn bg" onclick="appWD('${w.id}')">✅</button> <button class="btn br" onclick="rejWD('${w.id}')" style="margin-left:3px">❌</button>`:'<span style="color:var(--gn)">✅ সম্পন্ন</span>'}</td>
+  </tr>`;});
+}
+function appWD(id){
+  const W=getWDs(); const w=W.find(x=>x.id===id); if(!w) return;
+  const U=getUsers(); const u=U.find(x=>'AKT-'+x.uid===w.userId);
+  if(u&&(u.balance||0)<w.amount){toast('⚠️ ব্যালান্স কম!');return;}
+  if(u){u.balance-=w.amount; saveUsers(U);}
+  w.status='done'; saveWDs(W); renderWDs();
+  toast(`✅ ৳${w.amount.toLocaleString()} উত্তোলন অনুমোদন!`);
+}
+function rejWD(id){
+  const W=getWDs(); const w=W.find(x=>x.id===id); if(!w) return;
+  w.status='rejected'; saveWDs(W); renderWDs(); toast('❌ উত্তোলন বাতিল');
+}
+
+// ════════ PLANS ════════
+function renderPlans(){
+  const c=ge('plans-wrap'); c.innerHTML='';
+  PLANS.forEach(p=>{
+    c.innerHTML+=`<div class="pc ${p.popular?'pp':''}">
+      <div class="pc-hd">
+        <span style="font-size:24px">${p.emoji}</span>
+        <div style="flex:1"><div style="font-size:13px;font-weight:bold;color:var(--gd)">৳${p.price.toLocaleString()} প্ল্যান ${p.popular?'⭐':''}</div>
+        <div style="font-size:10px;color:var(--mt)">৳${p.daily}/দিন | 🎁 বক্স: ৳${p.daily}/দিন</div></div>
+        <button class="btn br" onclick="delPlan(${p.id})">🗑️</button>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>ইমোজি</label><input type="text" value="${p.emoji}" onchange="updP(${p.id},'emoji',this.value)"></div>
+        <div class="fg"><label>বিনিয়োগ (৳)</label><input type="number" value="${p.price}" onchange="updP(${p.id},'price',+this.value)"></div>
+        <div class="fg"><label>দৈনিক / বক্স (৳)</label><input type="number" value="${p.daily}" onchange="updP(${p.id},'daily',+this.value)"></div>
+        <div class="fg"><label>মেয়াদ (দিন)</label><input type="number" value="${p.days}" onchange="updP(${p.id},'days',+this.value)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;margin-top:5px;">
+        <div class="tw"><div class="tg ${p.popular?'on':''}" onclick="updP(${p.id},'popular',!${p.popular});this.classList.toggle('on')"></div><span style="font-size:12px">জনপ্রিয়</span></div>
+        <button class="bpr" onclick="saveP(${p.id})" style="margin-left:auto;padding:8px 15px;font-size:12px">💾 সেভ</button>
+      </div>
+    </div>`;
+  });
+}
+function updP(id,k,v){const p=PLANS.find(x=>x.id===id);if(p)p[k]=v;}
+function saveP(id){sj(K_PLANS,PLANS);renderPlans();toast('✅ প্ল্যান সেভ!');}
+function delPlan(id){if(!confirm('মুছবেন?'))return;PLANS=PLANS.filter(x=>x.id!==id);sj(K_PLANS,PLANS);renderPlans();toast('🗑️ মুছেছে');}
+function addPlan(){
+  const em=ge('np-em').value||'⭐', pr=parseFloat(ge('np-pr').value), dy=parseFloat(ge('np-dy').value);
+  const ds=parseInt(ge('np-ds').value)||30, pp=ge('np-pp').value==='1';
+  if(!pr||!dy){toast('⚠️ মূল্য ও দৈনিক আয় দিন');return;}
+  PLANS.push({id:Date.now(),emoji:em,price:pr,daily:dy,days:ds,popular:pp});
+  sj(K_PLANS,PLANS); closeMo('mo-addplan'); renderPlans(); toast(`✅ ৳${pr.toLocaleString()} প্ল্যান যোগ!`);
+}
+
+// ════════ MILESTONES ════════
+function renderMS(){
+  const c=ge('ms-inp'); c.innerHTML='';
+  MS.forEach((m,i)=>{c.innerHTML+=`<div class="pc" style="margin-bottom:10px;">
+    <div class="pc-hd"><span style="font-size:22px">${m.icon}</span><div style="font-size:13px;font-weight:bold;color:var(--gd)">${m.count} রেফার → ৳${m.reward.toLocaleString()}</div></div>
+    <div class="fr">
+      <div class="fg"><label>আইকন</label><input type="text" value="${m.icon}" onchange="MS[${i}].icon=this.value"></div>
+      <div class="fg"><label>রেফার সংখ্যা</label><input type="number" value="${m.count}" onchange="MS[${i}].count=+this.value"></div>
+      <div class="fg"><label>রিওয়ার্ড (৳)</label><input type="number" value="${m.reward}" onchange="MS[${i}].reward=+this.value"></div>
+    </div>
+  </div>`;});
+}
+function saveMS(){sj(K_MS,MS);toast('✅ মাইলস্টোন সেভ!');}
+
+// ════════ CHECKIN ════════
+function renderCI(){
+  const c=ge('ci-inp'); c.innerHTML='';
+  CI.forEach((r,i)=>{c.innerHTML+=`<div class="fg"><label>${i+1} দিন (৳)</label><input type="number" class="ci-i" value="${r}"></div>`;});
+  const bm=ge('box-map'); bm.innerHTML='';
+  PLANS.forEach(p=>{bm.innerHTML+=`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,215,0,.07);">
+    <span style="font-size:20px">${p.emoji}</span>
+    <div style="flex:1;font-size:12px">৳${p.price.toLocaleString()} প্ল্যান</div>
+    <span style="font-family:'Orbitron',monospace;color:var(--gd);font-size:13px;font-weight:bold">🎁 ৳${p.daily}/দিন</span>
+  </div>`;});
+}
+function saveCI(){
+  CI=Array.from(document.querySelectorAll('.ci-i')).map(x=>parseFloat(x.value)||0);
+  sj(K_CI,CI); toast('✅ চেক-ইন সেভ!');
+}
+
+// ════════ NOTICE ════════
+function prevN(){
+  const tx=ge('n-tx').value, ic=ge('n-ic').value, tp=ge('n-tp').value;
+  const col={info:'#4fc3f7',warn:'#ffd700',ok:'#00e676',hot:'#ff4757'}[tp];
+  ge('n-pv').innerHTML=`<span>${ic}</span> <span style="color:${col}">${tx||'...'}</span>`;
+}
+function pubN(){
+  const tx=ge('n-tx').value.trim(); if(!tx){toast('⚠️ বার্তা লিখুন!');return;}
+  const ic=ge('n-ic').value, tp=ge('n-tp').value;
+  NOTICE={text:tx,icon:ic,type:tp,time:new Date().toLocaleString('bn-BD')};
+  NHIST.unshift({...NOTICE}); if(NHIST.length>20) NHIST.pop();
+  sj(K_NOTICE,NOTICE); sj(K_NHIST,NHIST);
+  showAN(); renderNHist(); toast('📢 নোটিস প্রকাশিত!');
+}
+function clrN(){NOTICE=null;localStorage.removeItem(K_NOTICE);ge('aN').style.display='none';toast('🗑️ মুছেছে');}
+function showAN(){if(!NOTICE)return;ge('aN').style.display='flex';ge('aN-ic').textContent=NOTICE.icon;ge('aN-tx').textContent=NOTICE.text;}
+function renderNHist(){
+  const c=ge('n-hist'); if(!c) return;
+  if(!NHIST.length){c.innerHTML='<div style="color:var(--mt);text-align:center;padding:13px">কোনো ইতিহাস নেই</div>';return;}
+  c.innerHTML='';
+  NHIST.forEach((n,i)=>{c.innerHTML+=`<div style="padding:8px 0;border-bottom:1px solid rgba(180,20,20,.09);display:flex;align-items:flex-start;gap:7px;">
+    <span style="font-size:15px">${n.icon}</span>
+    <div style="flex:1"><div style="color:var(--tx);font-size:12px">${n.text}</div><div style="font-size:10px;color:var(--mt);margin-top:2px">${n.time}</div></div>
+    <button class="btn bgd" onclick="rePub(${i})" style="padding:3px 7px;font-size:10px">↺</button>
+  </div>`;});
+}
+function rePub(i){const n=NHIST[i];ge('n-tx').value=n.text;ge('n-ic').value=n.icon;prevN();pubN();}
+
+// ════════ SUPPORT ════════
+function saveSup(){
+  sj('akt_support',{waNum:ge('wa-n').value,waDisp:ge('wa-d').value,waDesc:ge('wa-desc').value,tgUser:ge('tg-u').value,tgDisp:ge('tg-d').value,from:ge('s-fr').value,to:ge('s-to').value});
+  toast('✅ সাপোর্ট সেটিংস সেভ!');
+}
+
+// ════════ STARTUP ════════
+window.showToast=toast;
+</script>
+</body>
+  </html>
