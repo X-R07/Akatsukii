@@ -443,52 +443,134 @@ tr:hover td{background:rgba(180,10,10,.04);}
 
 <div class="toast" id="toastEl"></div>
 
-<script>
-// ════════ KEYS (সাইটের মতো একই) ════════
-const K_USERS   = 'akt_all_users';
-const K_DEPS    = 'akt_deposits';
-const K_WDS     = 'akt_wds';
-const K_NOTICE  = 'akt_notice';
-const K_NHIST   = 'akt_n_hist';
-const K_CI      = 'akt_ci';
-const K_MS      = 'akt_ms';
-const K_PLANS   = 'akt_plans';
-const K_ADMIN   = 'akt_admin';
+<script type="module">
+// ════════════════════════════════════════
+// FIREBASE SETUP — ADMIN PANEL
+// ════════════════════════════════════════
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_u_6CGvkY83_xCX_W8Pj5xlKbUkvdXic",
+  authDomain: "aktsukii.firebaseapp.com",
+  projectId: "aktsukii",
+  storageBucket: "aktsukii.firebasestorage.app",
+  messagingSenderId: "668301487715",
+  appId: "1:668301487715:web:e156c95b9d9702354a9256"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+// ════════════════════════════════════════
+// DB LAYER — Firebase Firestore
+// ════════════════════════════════════════
+const DB = {
+  // ── Users ──
+  getUsers: async () => {
+    const snap = await getDocs(collection(db,'users'));
+    return snap.docs.map(d=>d.data());
+  },
+  saveUser: async (u) => {
+    await setDoc(doc(db,'users',u.uid), u, {merge:true});
+  },
+  updateUser: async (uid, changes) => {
+    await updateDoc(doc(db,'users',uid), changes);
+  },
+
+  // ── Deposits ──
+  getDeps: async () => {
+    const snap = await getDocs(query(collection(db,'deposits'),orderBy('createdAt','desc')));
+    return snap.docs.map(d=>({...d.data(), _docId:d.id}));
+  },
+  updDep: async (docId, changes) => {
+    const snap = await getDocs(query(collection(db,'deposits'),where('id','==',docId)));
+    if(!snap.empty) await updateDoc(snap.docs[0].ref, changes);
+  },
+
+  // ── Withdrawals ──
+  getWDs: async () => {
+    const snap = await getDocs(query(collection(db,'withdrawals'),orderBy('createdAt','desc')));
+    return snap.docs.map(d=>({...d.data(), _docId:d.id}));
+  },
+  updWD: async (docId, changes) => {
+    const snap = await getDocs(query(collection(db,'withdrawals'),where('id','==',docId)));
+    if(!snap.empty) await updateDoc(snap.docs[0].ref, changes);
+  },
+
+  // ── Config (plans, notice, checkin, milestones) ──
+  getConfig: async (key) => {
+    const snap = await getDoc(doc(db,'config',key));
+    return snap.exists() ? snap.data().value : null;
+  },
+  saveConfig: async (key, value) => {
+    await setDoc(doc(db,'config',key), {value}, {merge:true});
+  },
+
+  // ── Admin credentials (local only) ──
+  getAdmin: () => JSON.parse(localStorage.getItem('akt_admin') || 'null'),
+  saveAdmin: (a) => localStorage.setItem('akt_admin', JSON.stringify(a)),
+
+  // ── Notifications ──
+  addNotif: async (uid, n) => {
+    await addDoc(collection(db,'notifications',uid,'items'), {
+      ...n, time:new Date().toLocaleString('bn-BD'), createdAt:serverTimestamp()
+    });
+  },
+};
+
+// ════════ শর্টকাট ════════
+async function getUsers(){ return await DB.getUsers(); }
+async function getDeps(){  return await DB.getDeps();  }
+async function getWDs(){   return await DB.getWDs();   }
+async function saveUsers(arr){ for(const u of arr) await DB.saveUser(u); }
+async function saveDeps(arr){ /* bulk handled per op */ }
+async function saveWDs(arr){  /* bulk handled per op */ }
+
+// ════════ DEFAULT DATA ════════
+let ADMIN  = DB.getAdmin() || {user:'admin',pass:'admin123'};
+let PLANS  = [{id:1,emoji:'🌱',price:1000,daily:70,days:30,popular:false},{id:2,emoji:'🔥',price:1500,daily:100,days:30,popular:true},{id:3,emoji:'💎',price:2000,daily:120,days:30,popular:false},{id:4,emoji:'👑',price:3000,daily:160,days:30,popular:false}];
+let MS     = [{count:5,reward:200,icon:'🥉'},{count:10,reward:500,icon:'🥈'},{count:15,reward:799,icon:'🥇'},{count:20,reward:1099,icon:'👑'}];
+let CI     = [5,7,10,14,19,25,32];
+let NOTICE = null;
+let NHIST  = [];
+let curUID = null;
+
+// Load config from Firestore on startup
+async function loadConfig(){
+  try{
+    const plans = await DB.getConfig('plans');
+    if(plans) PLANS = plans;
+    const ms = await DB.getConfig('milestones');
+    if(ms) MS = ms;
+    const ci = await DB.getConfig('checkin');
+    if(ci) CI = ci;
+    const notice = await DB.getConfig('notice');
+    if(notice) NOTICE = notice;
+    const nhist = await DB.getConfig('notice_hist');
+    if(nhist) NHIST = nhist;
+  } catch(e){ console.warn('loadConfig',e); }
+}
 
 // ════════ HELPERS ════════
 const ge = id => document.getElementById(id);
-const gj = k  => JSON.parse(localStorage.getItem(k)||'null');
-const sj = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-function toast(msg){const t=ge('toastEl');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3200);}
-function openMo(id){ge(id).classList.add('on');}
-function closeMo(id){ge(id).classList.remove('on');}
-document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.target.classList.remove('on');});
-
-// ════════ DEFAULT DATA ════════
-let ADMIN   = gj(K_ADMIN) || {user:'admin',pass:'admin123'};
-let PLANS   = gj(K_PLANS) || [{id:1,emoji:'🌱',price:1000,daily:70,days:30,popular:false},{id:2,emoji:'🔥',price:1500,daily:100,days:30,popular:true},{id:3,emoji:'💎',price:2000,daily:120,days:30,popular:false},{id:4,emoji:'👑',price:3000,daily:160,days:30,popular:false}];
-let MS      = gj(K_MS)    || [{count:5,reward:200,icon:'🥉'},{count:10,reward:500,icon:'🥈'},{count:15,reward:799,icon:'🥇'},{count:20,reward:1099,icon:'👑'}];
-let CI      = gj(K_CI)    || [5,7,10,14,19,25,32];
-let NOTICE  = gj(K_NOTICE);
-let NHIST   = gj(K_NHIST) || [];
-let curUID  = null;
-
-// ════════ READ LIVE DATA ════════
-function getUsers(){ return gj(K_USERS)||[]; }
-function getDeps(){  return gj(K_DEPS) ||[]; }
-function getWDs(){   return gj(K_WDS)  ||[]; }
-
-function saveUsers(u){ sj(K_USERS,u); }
-function saveDeps(d){  sj(K_DEPS,d);  }
-function saveWDs(w){   sj(K_WDS,w);   }
+function toast(msg){
+  const t=ge('toastEl');
+  if(!t) return;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+function openMo(id){const m=ge(id);if(m)m.style.display='flex';}
+function closeMo(id){const m=ge(id);if(m)m.style.display='none';}
+function sj(key,val){localStorage.setItem(key,JSON.stringify(val));}
 
 // ════════ AUTH ════════
-function login(){
+async function login(){
   const u=ge('aU').value.trim(), p=ge('aP').value;
   if(u===ADMIN.user && p===ADMIN.pass){
     ge('LS').style.display='none';
     ge('MW').style.display='block';
-    initDash(); tickClk(); setInterval(tickClk,1000);
+    await loadConfig();
+    await initDash(); tickClk(); setInterval(tickClk,1000);
     if(NOTICE) showAN();
   } else { const e=ge('lerr'); e.style.display='block'; setTimeout(()=>e.style.display='none',3000); }
 }
@@ -498,7 +580,7 @@ function chgPass(){
   if(cp!==ADMIN.pass){toast('⚠️ বর্তমান পাসওয়ার্ড ভুল!');return;}
   if(np_&&np_!==cn){toast('⚠️ পাসওয়ার্ড মিলছে না!');return;}
   if(np_) ADMIN.pass=np_; if(nu_) ADMIN.user=nu_;
-  sj(K_ADMIN,ADMIN); toast('✅ Admin তথ্য আপডেট!');
+  DB.saveAdmin(ADMIN); toast('✅ Admin তথ্য আপডেট!');
 }
 
 // ════════ NAV ════════
@@ -508,14 +590,14 @@ function nav(pg,el){
   ge('pg-'+pg).classList.add('on');
   if(el) el.classList.add('on');
   const m={dashboard:initDash,deposits:renderDeps,users:()=>renderUsers(),withdrawals:renderWDs,plans:renderPlans,'refer-ms':renderMS,checkin:renderCI,notice:renderNHist};
-  if(m[pg]) m[pg]();
+  if(m[pg]) m[pg]().catch(e=>console.warn(e));
   if(window.innerWidth<=768) ge('SB').classList.remove('on');
 }
 function tickClk(){const e=ge('clk');if(e)e.textContent=new Date().toLocaleTimeString('bn-BD');}
 
 // ════════ DASHBOARD ════════
-function initDash(){
-  const U=getUsers(), D=getDeps(), W=getWDs();
+async function initDash(){
+  const [U,D,W] = await Promise.all([getUsers(), getDeps(), getWDs()]);
   const active = U.filter(u=>u.hasActivePlan&&!u.disabled).length;
   const tdep   = D.filter(d=>d.status==='done').reduce((a,b)=>a+b.amount,0);
   const pend   = D.filter(d=>d.status==='pending').length + W.filter(w=>w.status==='pending').length;
@@ -557,9 +639,9 @@ function initDash(){
 }
 
 // ════════ DEPOSITS ════════
-function renderDeps(){
+async function renderDeps(){
   const c=ge('dep-list'); c.innerHTML='';
-  const D=getDeps();
+  const D=await getDeps();
   const pend=D.filter(d=>d.status==='pending');
   const done=D.filter(d=>d.status!=='pending');
   if(!pend.length) c.innerHTML='<div style="text-align:center;color:var(--mt);padding:28px">✅ কোনো পেন্ডিং নেই</div>';
@@ -587,28 +669,36 @@ function renderDeps(){
     </div>`;});
   }
 }
-function appDep(id){
-  const D=getDeps(); const d=D.find(x=>x.id===id); if(!d) return;
-  d.status='done';
-  // ব্যালান্স যোগ
-  const U=getUsers(); const u=U.find(x=>'AKT-'+x.uid===d.userId);
-  if(u){ u.balance=(u.balance||0)+d.amount; saveUsers(U); }
-  saveDeps(D); renderDeps(); initDash();
-  toast(`✅ ৳${d.amount.toLocaleString()} অনুমোদন — ${d.userName} এর ব্যালান্সে যোগ!`);
+async function appDep(id){
+  try{
+    const D=await getDeps(); const d=D.find(x=>x.id===id); if(!d) return;
+    await DB.updDep(id,{status:'done'});
+    const U=await getUsers(); const u=U.find(x=>'AKT-'+x.uid===d.userId);
+    if(u){
+      await DB.updateUser(u.uid,{balance:(u.balance||0)+d.amount});
+      await DB.addNotif(u.uid,{icon:'💰',title:'ডিপোজিট অনুমোদিত',msg:`৳${d.amount.toLocaleString()} আপনার ব্যালান্সে যোগ হয়েছে`});
+    }
+    await renderDeps(); await initDash();
+    toast(`✅ ৳${d.amount.toLocaleString()} অনুমোদন — ${d.userName} এর ব্যালান্সে যোগ!`);
+  } catch(e){ toast('⚠️ সমস্যা হয়েছে'); console.error(e); }
 }
-function rejDep(id){
+async function rejDep(id){
   if(!confirm('বাতিল করবেন?')) return;
-  const D=getDeps(); const d=D.find(x=>x.id===id); if(!d) return;
-  d.status='rejected'; saveDeps(D); renderDeps(); initDash();
-  toast('❌ ডিপোজিট বাতিল');
+  try{
+    const D=await getDeps(); const d=D.find(x=>x.id===id); if(!d) return;
+    await DB.updDep(id,{status:'rejected'});
+    const U=await getUsers(); const u=U.find(x=>'AKT-'+x.uid===d.userId);
+    if(u) await DB.addNotif(u.uid,{icon:'❌',title:'ডিপোজিট বাতিল',msg:`৳${d.amount.toLocaleString()} রিকোয়েস্ট বাতিল হয়েছে। TrxID: ${d.trxId}`});
+    await renderDeps(); await initDash();
+    toast('❌ ডিপোজিট বাতিল');
+  } catch(e){ toast('⚠️ সমস্যা হয়েছে'); console.error(e); }
 }
 
 // ════════ USERS ════════
-function renderUsers(filter=''){
+async function renderUsers(filter=''){
   const tb=ge('u-tb'); tb.innerHTML='';
-  let U=getUsers();
+  let [U,D] = await Promise.all([getUsers(), getDeps()]);
   if(filter) U=U.filter(u=>u.name?.includes(filter)||u.phone?.includes(filter)||u.uid?.includes(filter));
-  const D=getDeps();
   U.forEach(u=>{
     const proc=D.some(d=>d.userId==='AKT-'+u.uid&&d.status==='pending');
     tb.innerHTML+=`<tr>
@@ -641,11 +731,12 @@ function togglePW(uid, pw){
   if(!el) return;
   el.textContent = el.textContent==='••••••••' ? pw : '••••••••';
 }
-function filterUsers(v){renderUsers(v);}
-function openUD(uid){
-  const U=getUsers(); const u=U.find(x=>x.uid===uid); if(!u) return; curUID=uid;
+function filterUsers(v){renderUsers(v).catch(e=>console.warn(e));}
+async function openUD(uid){
+  const [U,D] = await Promise.all([getUsers(), getDeps()]);
+  const u=U.find(x=>x.uid===uid); if(!u) return; curUID=uid;
   ge('ud-nm').textContent=u.name; ge('ud-id').textContent='AKT-'+u.uid;
-  const D=getDeps(); const proc=D.some(d=>d.userId==='AKT-'+uid&&d.status==='pending');
+  const proc=D.some(d=>d.userId==='AKT-'+uid&&d.status==='pending');
   ge('ud-gr').innerHTML=`
     <div class="ud-it"><div class="ud-lb">📱 নম্বর</div><div class="ud-vl">${u.phone}</div></div>
     <div class="ud-it"><div class="ud-lb">🔒 পাসওয়ার্ড</div>
@@ -670,48 +761,52 @@ function openUD(uid){
   ge('ud-amt').value='';
   openMo('mo-ud');
 }
-function adjBal(sign){
+async function adjBal(sign){
   const amt=parseFloat(ge('ud-amt').value);
   if(!amt||amt<=0){toast('⚠️ সঠিক পরিমাণ দিন');return;}
-  const U=getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
+  const U=await getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
   if(sign===-1&&(u.balance||0)<amt){toast('⚠️ ব্যালান্স পর্যাপ্ত নেই!');return;}
-  u.balance=Math.max(0,(u.balance||0)+amt*sign);
-  saveUsers(U); openUD(curUID); renderUsers();
+  const newBal=Math.max(0,(u.balance||0)+amt*sign);
+  await DB.updateUser(curUID,{balance:newBal});
+  openUD(curUID); renderUsers();
   toast(sign===1?`✅ ৳${amt.toLocaleString()} যোগ!`:`➖ ৳${amt.toLocaleString()} কাটা!`);
 }
-function togglePlan(){
-  const U=getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
-  u.hasActivePlan=!u.hasActivePlan;
-  if(!u.hasActivePlan){u.planName='কোনো প্ল্যান নেই';u.planPrice=0;u.planDaily=0;}
-  else u.planName='ম্যানুয়াল প্ল্যান';
-  saveUsers(U); openUD(curUID); renderUsers();
-  toast(`📦 প্ল্যান ${u.hasActivePlan?'সক্রিয়':'নিষ্ক্রিয়'}!`);
+async function togglePlan(){
+  const U=await getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
+  const newPlan=!u.hasActivePlan;
+  const changes={hasActivePlan:newPlan};
+  if(!newPlan){changes.planName='কোনো প্ল্যান নেই';changes.planPrice=0;changes.planDaily=0;}
+  else{changes.planName='ম্যানুয়াল প্ল্যান';}
+  await DB.updateUser(curUID,changes);
+  openUD(curUID); renderUsers();
+  toast(`📦 প্ল্যান ${newPlan?'সক্রিয়':'নিষ্ক্রিয়'}!`);
 }
-function toggleDis(){
-  const U=getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
-  u.disabled=!u.disabled; saveUsers(U); openUD(curUID); renderUsers();
-  toast(`${u.disabled?'🚫':'✅'} ${u.name} ${u.disabled?'ডিজেবল':'সক্রিয়'}!`);
+async function toggleDis(){
+  const U=await getUsers(); const u=U.find(x=>x.uid===curUID); if(!u) return;
+  await DB.updateUser(curUID,{disabled:!u.disabled});
+  openUD(curUID); renderUsers();
+  toast(`${!u.disabled?'🚫':'✅'} ${u.name} ${!u.disabled?'ডিজেবল':'সক্রিয়'}!`);
 }
-function qDis(uid){
-  const U=getUsers(); const u=U.find(x=>x.uid===uid); if(!u) return;
-  u.disabled=!u.disabled; saveUsers(U); renderUsers();
-  toast(`${u.disabled?'🚫':'✅'} ${u.name} ${u.disabled?'ডিজেবল':'সক্রিয়'}!`);
+async function qDis(uid){
+  const U=await getUsers(); const u=U.find(x=>x.uid===uid); if(!u) return;
+  await DB.updateUser(uid,{disabled:!u.disabled}); renderUsers();
+  toast(`${!u.disabled?'🚫':'✅'} ${u.name} ${!u.disabled?'ডিজেবল':'সক্রিয়'}!`);
 }
-function addUser(){
+async function addUser(){
   const n=ge('nu-n').value.trim(), ph=ge('nu-ph').value.trim(), pw=ge('nu-pw').value, bl=parseFloat(ge('nu-bl').value)||0;
   if(!n||!ph){toast('⚠️ নাম ও নম্বর দিন');return;}
-  const U=getUsers();
+  const U=await getUsers();
   if(U.find(x=>x.phone===ph)){toast('⚠️ এই নম্বরে আইডি আছে!');return;}
   const uid=String(Math.floor(1000+Math.random()*9000));
-  U.push({name:n,phone:ph,pass:pw||'123456',uid,balance:bl,hasActivePlan:false,hasActiveRefer:false,planName:'কোনো প্ল্যান নেই',planPrice:0,planDaily:0,joined:new Date().toLocaleDateString('bn-BD'),totalEarned:bl,referredBy:''});
-  saveUsers(U); closeMo('mo-adduser'); renderUsers();
+  const newU={name:n,phone:ph,pass:pw||'123456',uid,balance:bl,hasActivePlan:false,hasActiveRefer:false,planName:'কোনো প্ল্যান নেই',planPrice:0,planDaily:0,joined:new Date().toLocaleDateString('bn-BD'),totalEarned:bl,referredBy:'',disabled:false};
+  await DB.saveUser(newU); closeMo('mo-adduser'); await renderUsers();
   toast(`✅ ${n} (AKT-${uid}) যোগ!`);
 }
 
 // ════════ WITHDRAWALS ════════
-function renderWDs(){
+async function renderWDs(){
   const tb=ge('wd-tb'); tb.innerHTML='';
-  const W=getWDs();
+  const W=await getWDs();
   if(!W.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--mt);padding:26px">কোনো উত্তোলন নেই</td></tr>';return;}
   W.forEach(w=>{tb.innerHTML+=`<tr>
     <td>${w.userName||'—'}<br><span style="font-size:10px;color:var(--mt)">${w.userId||''}</span></td>
@@ -722,17 +817,23 @@ function renderWDs(){
     <td>${w.status==='pending'?`<button class="btn bg" onclick="appWD('${w.id}')">✅</button> <button class="btn br" onclick="rejWD('${w.id}')" style="margin-left:3px">❌</button>`:'<span style="color:var(--gn)">✅ সম্পন্ন</span>'}</td>
   </tr>`;});
 }
-function appWD(id){
-  const W=getWDs(); const w=W.find(x=>x.id===id); if(!w) return;
-  const U=getUsers(); const u=U.find(x=>'AKT-'+x.uid===w.userId);
-  if(u&&(u.balance||0)<w.amount){toast('⚠️ ব্যালান্স কম!');return;}
-  if(u){u.balance-=w.amount; saveUsers(U);}
-  w.status='done'; saveWDs(W); renderWDs();
-  toast(`✅ ৳${w.amount.toLocaleString()} উত্তোলন অনুমোদন!`);
+async function appWD(id){
+  try{
+    const [W,U]=await Promise.all([getWDs(),getUsers()]);
+    const w=W.find(x=>x.id===id); if(!w) return;
+    const u=U.find(x=>'AKT-'+x.uid===w.userId);
+    if(u&&(u.balance||0)<w.amount){toast('⚠️ ব্যালান্স কম!');return;}
+    if(u) await DB.updateUser(u.uid,{balance:(u.balance||0)-w.amount});
+    await DB.updWD(id,{status:'done'});
+    await renderWDs();
+    toast(`✅ ৳${w.amount.toLocaleString()} উত্তোলন অনুমোদন!`);
+  } catch(e){ toast('⚠️ সমস্যা হয়েছে'); console.error(e); }
 }
-function rejWD(id){
-  const W=getWDs(); const w=W.find(x=>x.id===id); if(!w) return;
-  w.status='rejected'; saveWDs(W); renderWDs(); toast('❌ উত্তোলন বাতিল');
+async function rejWD(id){
+  try{
+    await DB.updWD(id,{status:'rejected'});
+    await renderWDs(); toast('❌ উত্তোলন বাতিল');
+  } catch(e){ toast('⚠️ সমস্যা হয়েছে'); console.error(e); }
 }
 
 // ════════ PLANS ════════
@@ -760,14 +861,14 @@ function renderPlans(){
   });
 }
 function updP(id,k,v){const p=PLANS.find(x=>x.id===id);if(p)p[k]=v;}
-function saveP(id){sj(K_PLANS,PLANS);renderPlans();toast('✅ প্ল্যান সেভ!');}
-function delPlan(id){if(!confirm('মুছবেন?'))return;PLANS=PLANS.filter(x=>x.id!==id);sj(K_PLANS,PLANS);renderPlans();toast('🗑️ মুছেছে');}
-function addPlan(){
+async function saveP(id){await DB.saveConfig('plans',PLANS);renderPlans();toast('✅ প্ল্যান সেভ!');}
+async function delPlan(id){if(!confirm('মুছবেন?'))return;PLANS=PLANS.filter(x=>x.id!==id);await DB.saveConfig('plans',PLANS);renderPlans();toast('🗑️ মুছেছে');}
+async function addPlan(){
   const em=ge('np-em').value||'⭐', pr=parseFloat(ge('np-pr').value), dy=parseFloat(ge('np-dy').value);
   const ds=parseInt(ge('np-ds').value)||30, pp=ge('np-pp').value==='1';
   if(!pr||!dy){toast('⚠️ মূল্য ও দৈনিক আয় দিন');return;}
   PLANS.push({id:Date.now(),emoji:em,price:pr,daily:dy,days:ds,popular:pp});
-  sj(K_PLANS,PLANS); closeMo('mo-addplan'); renderPlans(); toast(`✅ ৳${pr.toLocaleString()} প্ল্যান যোগ!`);
+  await DB.saveConfig('plans',PLANS); closeMo('mo-addplan'); renderPlans(); toast(`✅ ৳${pr.toLocaleString()} প্ল্যান যোগ!`);
 }
 
 // ════════ MILESTONES ════════
@@ -782,7 +883,7 @@ function renderMS(){
     </div>
   </div>`;});
 }
-function saveMS(){sj(K_MS,MS);toast('✅ মাইলস্টোন সেভ!');}
+async function saveMS(){await DB.saveConfig('milestones',MS);toast('✅ মাইলস্টোন সেভ!');}
 
 // ════════ CHECKIN ════════
 function renderCI(){
@@ -795,9 +896,9 @@ function renderCI(){
     <span style="font-family:'Orbitron',monospace;color:var(--gd);font-size:13px;font-weight:bold">🎁 ৳${p.daily}/দিন</span>
   </div>`;});
 }
-function saveCI(){
+async function saveCI(){
   CI=Array.from(document.querySelectorAll('.ci-i')).map(x=>parseFloat(x.value)||0);
-  sj(K_CI,CI); toast('✅ চেক-ইন সেভ!');
+  await DB.saveConfig('checkin',CI); toast('✅ চেক-ইন সেভ!');
 }
 
 // ════════ NOTICE ════════
@@ -806,15 +907,16 @@ function prevN(){
   const col={info:'#4fc3f7',warn:'#ffd700',ok:'#00e676',hot:'#ff4757'}[tp];
   ge('n-pv').innerHTML=`<span>${ic}</span> <span style="color:${col}">${tx||'...'}</span>`;
 }
-function pubN(){
+async function pubN(){
   const tx=ge('n-tx').value.trim(); if(!tx){toast('⚠️ বার্তা লিখুন!');return;}
   const ic=ge('n-ic').value, tp=ge('n-tp').value;
   NOTICE={text:tx,icon:ic,type:tp,time:new Date().toLocaleString('bn-BD')};
   NHIST.unshift({...NOTICE}); if(NHIST.length>20) NHIST.pop();
-  sj(K_NOTICE,NOTICE); sj(K_NHIST,NHIST);
+  await DB.saveConfig('notice',NOTICE);
+  await DB.saveConfig('notice_hist',NHIST);
   showAN(); renderNHist(); toast('📢 নোটিস প্রকাশিত!');
 }
-function clrN(){NOTICE=null;localStorage.removeItem(K_NOTICE);ge('aN').style.display='none';toast('🗑️ মুছেছে');}
+async function clrN(){NOTICE=null;await DB.saveConfig('notice',null);ge('aN').style.display='none';toast('🗑️ মুছেছে');}
 function showAN(){if(!NOTICE)return;ge('aN').style.display='flex';ge('aN-ic').textContent=NOTICE.icon;ge('aN-tx').textContent=NOTICE.text;}
 function renderNHist(){
   const c=ge('n-hist'); if(!c) return;
@@ -836,6 +938,23 @@ function saveSup(){
 
 // ════════ STARTUP ════════
 window.showToast=toast;
+// Expose all onclick functions for type="module"
+window.login=login; window.logout=logout; window.chgPass=chgPass;
+window.nav=nav; window.initDash=initDash;
+window.renderDeps=renderDeps; window.appDep=appDep; window.rejDep=rejDep;
+window.renderUsers=renderUsers; window.filterUsers=filterUsers;
+window.openUD=openUD; window.adjBal=adjBal; window.togglePlan=togglePlan;
+window.toggleDis=toggleDis; window.qDis=qDis; window.addUser=addUser;
+window.togglePW=togglePW;
+window.renderWDs=renderWDs; window.appWD=appWD; window.rejWD=rejWD;
+window.renderPlans=renderPlans; window.updP=updP; window.saveP=saveP;
+window.delPlan=delPlan; window.addPlan=addPlan;
+window.renderMS=renderMS; window.saveMS=saveMS;
+window.renderCI=renderCI; window.saveCI=saveCI;
+window.prevN=prevN; window.pubN=pubN; window.clrN=clrN;
+window.renderNHist=renderNHist; window.rePub=rePub;
+window.saveSup=saveSup;
+window.openMo=openMo; window.closeMo=closeMo; window.ge=ge;
 </script>
 </body>
-  </html>
+</html>
