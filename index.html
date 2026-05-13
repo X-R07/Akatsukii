@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akatsuki — Investment Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Tiro+Bangla&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--red:#e63946;--crimson:#c1121f;--darker:#050508;--card-bg:rgba(15,5,5,.88);--accent:#ff4757;--gold:#ffd700;--text:#f0e6e6;--muted:#a89090;--green:#00e676;--sidebar-w:80px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Tiro Bangla',serif;background:var(--darker);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.bg-canvas{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(180,10,10,.18) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(120,5,5,.20) 0%,transparent 55%),linear-gradient(160deg,#0a0005 0%,#08000a 40%,#000508 100%);}
+.bg-canvas::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(200,10,10,.03) 60px,rgba(200,10,10,.03) 61px),repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(200,10,10,.03) 60px,rgba(200,10,10,.03) 61px);}
+.orb{position:fixed;border-radius:50%;filter:blur(70px);z-index:0;pointer-events:none;animation:drift 12s ease-in-out infinite alternate;}
+.orb-1{width:400px;height:400px;background:radial-gradient(circle,rgba(200,0,0,.15),transparent);top:-100px;left:-100px;animation-duration:14s;}
+.orb-2{width:300px;height:300px;background:radial-gradient(circle,rgba(180,20,20,.12),transparent);bottom:-50px;right:60px;animation-duration:18s;animation-delay:-5s;}
+.orb-3{width:200px;height:200px;background:radial-gradient(circle,rgba(255,70,70,.10),transparent);top:50%;left:40%;animation-duration:10s;animation-delay:-3s;}
+@keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(30px,20px) scale(1.1);}}
+
+.auth-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0 40px;background:radial-gradient(ellipse 80% 70% at 30% 20%,rgba(180,10,10,.18),transparent 60%),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(60,0,120,.14),transparent),linear-gradient(160deg,#08000a,#050508 50%,#000608);}
+.auth-screen::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(200,10,10,.025) 60px,rgba(200,10,10,.025) 61px),repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(200,10,10,.025) 60px,rgba(200,10,10,.025) 61px);pointer-events:none;}
+.auth-box{position:relative;z-index:1;width:100%;max-width:380px;margin:auto 16px;animation:authIn .6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes authIn{from{opacity:0;transform:scale(.8) translateY(40px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.auth-logo-wrap{text-align:center;margin-bottom:20px;}
+.auth-logo{font-family:'Cinzel Decorative',serif;font-size:26px;color:var(--gold);text-shadow:0 0 30px rgba(255,215,0,.5),0 0 60px rgba(255,150,0,.2);animation:logoPulse 3s ease-in-out infinite;}
+@keyframes logoPulse{0%,100%{text-shadow:0 0 20px rgba(255,215,0,.4),0 0 40px rgba(255,130,0,.15);}50%{text-shadow:0 0 40px rgba(255,215,0,.7),0 0 80px rgba(255,160,0,.3);}}
+.auth-tagline{font-size:10px;color:var(--muted);letter-spacing:3px;margin-top:4px;font-family:'Orbitron',monospace;}
+.auth-card{background:rgba(8,2,2,.97);border:1px solid rgba(180,20,20,.4);border-radius:22px;padding:24px 22px;backdrop-filter:blur(30px);box-shadow:0 30px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,100,100,.07);position:relative;}
+.auth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:22px 22px 0 0;background:linear-gradient(90deg,transparent,var(--crimson) 30%,var(--gold) 50%,var(--crimson) 70%,transparent);}
+.auth-tabs{display:flex;background:rgba(15,5,5,.8);border-radius:12px;padding:4px;margin-bottom:20px;border:1px solid rgba(180,20,20,.2);}
+.auth-tab{flex:1;padding:10px;text-align:center;border-radius:9px;cursor:pointer;font-size:13px;font-family:'Tiro Bangla',serif;color:var(--muted);transition:all .3s;}
+.auth-tab.active{background:linear-gradient(135deg,var(--crimson),var(--accent));color:#fff;box-shadow:0 4px 15px rgba(180,10,10,.4);}
+.auth-form{display:none;}
+.auth-form.active{display:block;animation:fadeSlide .35s ease;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.auth-field{margin-bottom:12px;}
+.auth-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;padding-left:2px;}
+.auth-field input{width:100%;padding:12px 14px;background:rgba(15,5,5,.9);border:1px solid rgba(180,20,20,.3);border-radius:11px;color:var(--text);font-size:14px;font-family:'Tiro Bangla',serif;outline:none;transition:all .3s;}
+.auth-field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,215,0,.08);}
+.auth-submit{width:100%;padding:13px;background:linear-gradient(135deg,#7b1a1a,var(--crimson),var(--accent));border:none;border-radius:12px;color:#fff;font-size:14px;font-family:'Tiro Bangla',serif;font-weight:bold;cursor:pointer;transition:all .3s;margin-top:4px;letter-spacing:.5px;}
+.auth-submit:hover{transform:translateY(-2px);box-shadow:0 10px 35px rgba(230,57,70,.5);}
+.auth-submit:active{transform:translateY(0);}
+.auth-err{background:rgba(200,10,10,.15);border:1px solid rgba(200,10,10,.35);border-radius:9px;padding:9px 12px;font-size:12px;color:var(--accent);margin-top:10px;display:none;text-align:center;}
+.auth-bottom{text-align:center;font-size:11px;color:var(--muted);margin-top:14px;}
+.auth-bottom span{color:var(--gold);cursor:pointer;}
+.auth-bottom span:hover{text-decoration:underline;}
+.auth-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+.auth-orb-1{width:350px;height:350px;background:radial-gradient(circle,rgba(200,10,10,.12),transparent);top:-80px;left:-80px;animation:drift 14s ease-in-out infinite alternate;}
+.auth-orb-2{width:250px;height:250px;background:radial-gradient(circle,rgba(100,0,180,.10),transparent);bottom:-60px;right:-40px;animation:drift 18s ease-in-out infinite alternate-reverse;}
+@keyframes drift{from{transform:translate(0,0);}to{transform:translate(25px,18px);}}
+
+.auth-form-title{font-family:'Cinzel Decorative',serif;font-size:15px;color:var(--gold);text-align:center;margin-bottom:18px;}
+.auth-back{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;font-family:'Tiro Bangla',serif;padding:0;margin-bottom:14px;display:flex;align-items:center;gap:4px;transition:color .2s;}
+.auth-back:hover{color:var(--gold);}
+
+/* WELCOME */
+.welcome-icon{font-size:52px;text-align:center;margin-bottom:10px;filter:drop-shadow(0 0 18px rgba(255,215,0,.35));}
+.welcome-title{font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--gold);text-align:center;margin-bottom:5px;}
+.welcome-sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:24px;}
+.welcome-btns{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
+.wb-btn{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border:none;border-radius:15px;cursor:pointer;transition:all .3s;font-family:'Tiro Bangla',serif;text-align:left;}
+.wb-login{background:linear-gradient(135deg,rgba(100,10,10,.6),rgba(180,20,20,.4));border:1px solid rgba(230,57,70,.35);}
+.wb-login:hover{background:linear-gradient(135deg,rgba(140,15,15,.8),rgba(200,30,30,.6));transform:translateY(-2px);box-shadow:0 8px 25px rgba(180,10,10,.35);}
+.wb-register{background:linear-gradient(135deg,rgba(30,15,0,.6),rgba(80,50,0,.4));border:1px solid rgba(255,215,0,.3);}
+.wb-register:hover{background:linear-gradient(135deg,rgba(50,30,0,.8),rgba(100,70,0,.6));transform:translateY(-2px);box-shadow:0 8px 25px rgba(200,150,0,.2);}
+.wb-icon{font-size:28px;flex-shrink:0;}
+.wb-main{font-size:15px;font-weight:bold;color:var(--text);margin-bottom:2px;}
+.wb-hint{font-size:11px;color:var(--muted);}
+.wb-arrow{margin-left:auto;font-size:22px;color:var(--muted);font-weight:bold;}
+.wb-login .wb-arrow{color:rgba(230,57,70,.7);}
+.wb-register .wb-arrow{color:rgba(255,215,0,.6);}
+.wb-guest{width:100%;padding:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:var(--muted);font-size:12px;font-family:'Tiro Bangla',serif;cursor:pointer;transition:all .3s;margin-bottom:16px;}
+.wb-guest:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.welcome-footer{text-align:center;font-size:11px;color:rgba(168,144,144,.45);border-top:1px solid rgba(180,20,20,.15);padding-top:14px;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:rgba(5,0,0,.94);border-right:1px solid rgba(200,20,20,.25);backdrop-filter:blur(20px);z-index:100;display:flex;flex-direction:column;align-items:center;padding:14px 0 8px;gap:3px;box-shadow:4px 0 30px rgba(180,0,0,.2);overflow-y:auto;}
+.sidebar-logo{font-family:'Cinzel Decorative',serif;font-size:10px;color:var(--gold);text-align:center;line-height:1.2;padding:4px 6px 12px;border-bottom:1px solid rgba(200,30,30,.3);width:100%;letter-spacing:1px;text-shadow:0 0 10px rgba(255,215,0,.5);}
+.sidebar-logo span{display:block;font-size:18px;}
+.nav-btn{width:62px;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:13px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-size:8px;font-family:'Tiro Bangla',serif;transition:all .3s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;text-align:center;line-height:1.2;}
+.nav-btn .icon{font-size:19px;transition:transform .3s;}
+.nav-btn::before{content:'';position:absolute;inset:0;border-radius:13px;background:linear-gradient(135deg,rgba(200,10,10,.15),rgba(255,50,50,.05));opacity:0;transition:opacity .3s;}
+.nav-btn:hover,.nav-btn.active{color:var(--accent);transform:scale(1.08) translateY(-2px);box-shadow:0 8px 25px rgba(200,10,10,.4),inset 0 0 20px rgba(200,10,10,.1);border:1px solid rgba(230,57,70,.4);}
+.nav-btn:hover::before,.nav-btn.active::before{opacity:1;}
+.nav-btn:hover .icon,.nav-btn.active .icon{transform:scale(1.2) rotate(-5deg);}
+.nav-btn.active{background:rgba(180,10,10,.2);color:var(--gold);border-color:rgba(255,215,0,.3);}
+.nav-btn.active .icon{filter:drop-shadow(0 0 6px rgba(255,215,0,.6));}
+.nav-btn:active{transform:scale(.95);}
+.ripple{position:absolute;border-radius:50%;background:rgba(230,57,70,.4);animation:rippleAnim .6s ease-out forwards;pointer-events:none;}
+@keyframes rippleAnim{0%{width:0;height:0;opacity:1;transform:translate(-50%,-50%);}100%{width:120px;height:120px;opacity:0;transform:translate(-50%,-50%);}}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);padding:24px 18px;position:relative;z-index:10;min-height:100vh;}
+.page{display:none;animation:pageIn .45s cubic-bezier(.22,1,.36,1);}
+.page.active{display:block;}
+@keyframes pageIn{from{opacity:0;transform:translateY(18px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+/* HEADER */
+.page-header{text-align:center;margin-bottom:24px;}
+.page-header h1{font-family:'Cinzel Decorative',serif;font-size:clamp(19px,4vw,34px);background:linear-gradient(135deg,#ff6b6b,var(--gold),#ff4757);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;background-size:200% auto;}
+@keyframes shimmer{0%{background-position:0% center;}100%{background-position:200% center;}}
+.page-header p{color:var(--muted);font-size:12px;margin-top:5px;}
+
+/* PLAN CARDS */
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:16px;}
+.plan-card{background:var(--card-bg);border:1px solid rgba(180,20,20,.3);border-radius:18px;padding:20px 16px;position:relative;overflow:hidden;backdrop-filter:blur(15px);cursor:pointer;transition:all .4s cubic-bezier(.34,1.56,.64,1);animation:cardIn .6s cubic-bezier(.22,1,.36,1) both;}
+.plan-card:nth-child(1){animation-delay:.05s;}.plan-card:nth-child(2){animation-delay:.12s;}.plan-card:nth-child(3){animation-delay:.19s;}.plan-card:nth-child(4){animation-delay:.26s;}
+@keyframes cardIn{from{opacity:0;transform:translateY(40px) scale(.9);}to{opacity:1;transform:translateY(0) scale(1);}}
+.plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--crimson),var(--gold),var(--accent));opacity:0;transition:opacity .3s;}
+.plan-card:hover{transform:translateY(-8px) scale(1.02);border-color:rgba(230,57,70,.6);box-shadow:0 20px 50px rgba(180,0,0,.35);}
+.plan-card:hover::before{opacity:1;}
+.plan-card.popular{border-color:rgba(255,215,0,.4);box-shadow:0 0 30px rgba(255,215,0,.1);}
+.plan-card.popular::before{opacity:1;background:linear-gradient(90deg,var(--gold),#ffaa00,var(--gold));}
+.popular-badge{position:absolute;top:11px;right:11px;background:linear-gradient(135deg,var(--gold),#ffaa00);color:#000;font-size:8px;font-weight:bold;padding:3px 8px;border-radius:20px;font-family:'Orbitron',monospace;}
+.plan-emoji{font-size:28px;margin-bottom:9px;display:block;}
+.plan-price{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--accent);}
+.plan-price span{font-size:12px;color:var(--muted);font-family:'Tiro Bangla',serif;}
+.plan-daily{margin:7px 0 4px;font-size:13px;color:var(--gold);font-weight:bold;}
+.plan-info{font-size:11px;color:var(--muted);margin-bottom:10px;}
+.plan-total{font-size:11px;color:#7fff7f;background:rgba(0,150,0,.1);border:1px solid rgba(0,200,0,.2);border-radius:8px;padding:5px 8px;margin-bottom:12px;}
+.plan-btn{width:100%;padding:9px;background:linear-gradient(135deg,var(--crimson),var(--accent));border:none;border-radius:9px;color:#fff;font-size:12px;font-family:'Tiro Bangla',serif;cursor:pointer;font-weight:bold;transition:all .3s;}
+.plan-btn:hover{transform:scale(1.04);box-shadow:0 6px 25px rgba(230,57,70,.6);}
+
+/* CHECK-IN */
+.section-block{margin-top:26px;}
+.section-title{font-size:13px;color:var(--gold);font-weight:bold;text-align:center;margin-bottom:13px;}
+.checkin-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.checkin-day{border-radius:11px;padding:9px 3px;text-align:center;border:1px solid rgba(180,20,20,.25);background:rgba(15,5,5,.8);transition:all .3s;position:relative;}
+.checkin-day .day-num{font-size:8px;color:var(--muted);margin-bottom:3px;}
+.checkin-day .day-coin{font-size:16px;}
+.checkin-day .day-amt{font-size:8px;color:var(--gold);font-weight:bold;margin-top:2px;}
+.checkin-day.claimed{background:rgba(0,80,0,.25);border-color:rgba(0,200,0,.35);}
+.checkin-day.claimed::after{content:'✓';position:absolute;top:3px;right:4px;font-size:7px;color:var(--green);}
+.checkin-day.today-day{border-color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.3);background:rgba(40,30,0,.5);}
+.checkin-btn{display:block;width:100%;max-width:260px;margin:13px auto 0;padding:10px;background:linear-gradient(135deg,#006600,#00aa00);border:none;border-radius:11px;color:#fff;font-size:13px;font-family:'Tiro Bangla',serif;font-weight:bold;cursor:pointer;transition:all .3s;}
+.checkin-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,180,0,.4);}
+.checkin-btn:disabled{background:rgba(30,30,30,.6);color:var(--muted);transform:none;cursor:not-allowed;}
+
+/* SURPRISE BOX */
+.surprise-box-wrap{display:flex;justify-content:center;}
+.surprise-box{width:130px;height:130px;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:20px;border:2px solid rgba(255,215,0,.35);background:linear-gradient(135deg,rgba(40,10,0,.9),rgba(20,5,0,.9));backdrop-filter:blur(10px);transition:all .3s;animation:boxPulse 2.5s ease-in-out infinite;}
+@keyframes boxPulse{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.2),0 0 40px rgba(200,10,10,.1);}50%{box-shadow:0 0 35px rgba(255,215,0,.4),0 0 60px rgba(200,10,10,.2);}}
+.surprise-box:hover{transform:scale(1.07) rotate(2deg);}
+.box-emoji{font-size:48px;animation:bounce 1.5s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+.box-label{font-size:10px;color:var(--gold);margin-top:5px;font-weight:bold;}
+.box-shine{position:absolute;top:-40%;left:-40%;width:60%;height:60%;background:radial-gradient(circle,rgba(255,255,255,.07),transparent 70%);border-radius:50%;animation:shineMove 3s linear infinite;pointer-events:none;}
+@keyframes shineMove{0%{transform:translate(0,0);}50%{transform:translate(100%,100%);}100%{transform:translate(0,0);}}
+
+/* NOTIFICATIONS */
+.notif-list{display:flex;flex-direction:column;gap:11px;}
+.notif-item{background:var(--card-bg);border:1px solid rgba(180,20,20,.25);border-radius:13px;padding:13px 15px;display:flex;align-items:flex-start;gap:11px;backdrop-filter:blur(10px);animation:cardIn .5s ease both;}
+.notif-item:nth-child(2){animation-delay:.07s;}.notif-item:nth-child(3){animation-delay:.14s;}.notif-item:nth-child(4){animation-delay:.21s;}
+.notif-icon{font-size:21px;flex-shrink:0;}
+.notif-text h4{font-size:12px;color:var(--text);margin-bottom:3px;}
+.notif-text p{font-size:11px;color:var(--muted);}
+.notif-time{font-size:10px;color:rgba(255,255,255,.3);margin-left:auto;flex-shrink:0;}
+.notif-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px;box-shadow:0 0 8px var(--accent);}
+
+/* PAYMENT */
+.payment-tabs{display:flex;gap:10px;margin-bottom:20px;}
+.tab-btn{flex:1;padding:10px;background:rgba(20,5,5,.8);border:1px solid rgba(180,20,20,.25);border-radius:11px;color:var(--muted);font-family:'Tiro Bangla',serif;font-size:12px;cursor:pointer;transition:all .3s;}
+.tab-btn.active{background:linear-gradient(135deg,rgba(180,10,10,.4),rgba(100,5,5,.3));border-color:var(--accent);color:var(--text);}
+.tab-content{display:none;}
+.tab-content.active{display:block;animation:pageIn .4s ease;}
+.admin-box{background:rgba(10,3,3,.9);border:1px solid rgba(255,215,0,.3);border-radius:13px;padding:13px 15px;margin-bottom:16px;display:flex;align-items:center;gap:11px;}
+.admin-box .ab-icon{font-size:26px;flex-shrink:0;}
+.admin-box .ab-info{flex:1;}
+.admin-box .ab-label{font-size:9px;color:var(--muted);margin-bottom:3px;}
+.admin-box .ab-number{font-family:'Orbitron',monospace;font-size:15px;color:var(--gold);letter-spacing:1px;}
+.admin-box .ab-note{font-size:9px;color:var(--muted);margin-top:3px;}
+.copy-btn{background:rgba(180,10,10,.3);border:1px solid rgba(180,10,10,.4);color:var(--accent);padding:6px 10px;border-radius:8px;font-size:10px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Tiro Bangla',serif;}
+.copy-btn:hover{background:rgba(180,10,10,.5);}
+.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;}
+.method-item{padding:9px 5px;border-radius:9px;border:1px solid rgba(180,20,20,.2);background:rgba(15,5,5,.8);text-align:center;cursor:pointer;font-size:11px;color:var(--muted);transition:all .3s;}
+.method-item .m-icon{font-size:20px;display:block;margin-bottom:4px;}
+.method-item.selected,.method-item:hover{border-color:var(--accent);color:var(--text);background:rgba(180,10,10,.15);}
+.form-group{margin-bottom:13px;}
+.form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.form-group input{width:100%;padding:10px 12px;background:rgba(15,5,5,.9);border:1px solid rgba(180,20,20,.3);border-radius:9px;color:var(--text);font-family:'Tiro Bangla',serif;font-size:13px;transition:border-color .3s;outline:none;}
+.form-group input:focus{border-color:var(--accent);box-shadow:0 0 12px rgba(230,57,70,.2);}
+.submit-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--crimson),var(--accent));border:none;border-radius:11px;color:#fff;font-size:13px;font-family:'Tiro Bangla',serif;font-weight:bold;cursor:pointer;transition:all .3s;}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 10px 35px rgba(230,57,70,.5);}
+.submit-btn:disabled{background:rgba(50,20,20,.6);color:var(--muted);transform:none;cursor:not-allowed;box-shadow:none;}
+.min-note{text-align:center;font-size:11px;color:var(--muted);margin-top:8px;}
+.min-note span{color:var(--gold);}
+.withdraw-cond{background:rgba(10,5,0,.8);border:1px solid rgba(255,165,0,.25);border-radius:11px;padding:11px 13px;margin-bottom:15px;font-size:11px;color:var(--muted);line-height:1.9;}
+.withdraw-cond strong{color:#ffaa44;display:block;margin-bottom:4px;}
+.cond-item{display:flex;align-items:center;gap:6px;}
+.cond-ok{color:var(--green);}.cond-no{color:var(--accent);}
+.amount-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
+.amount-chip{padding:9px 5px;border-radius:9px;border:1px solid rgba(180,20,20,.25);background:rgba(15,5,5,.8);text-align:center;cursor:pointer;font-size:12px;color:var(--muted);transition:all .3s;font-family:'Orbitron',monospace;}
+.amount-chip:hover,.amount-chip.selected{border-color:var(--gold);color:var(--gold);background:rgba(40,25,0,.4);}
+
+/* PROFILE */
+.profile-hero{background:var(--card-bg);border:1px solid rgba(180,20,20,.3);border-radius:18px;padding:20px;text-align:center;margin-bottom:16px;backdrop-filter:blur(15px);position:relative;overflow:hidden;}
+.profile-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:70px;background:linear-gradient(180deg,rgba(180,10,10,.2),transparent);}
+.avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--crimson),var(--accent));display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 9px;border:3px solid rgba(255,215,0,.4);box-shadow:0 0 28px rgba(180,10,10,.5);position:relative;}
+.avatar-ring{position:absolute;inset:-6px;border-radius:50%;border:2px solid transparent;background:linear-gradient(135deg,var(--gold),transparent,var(--accent)) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:destination-out;animation:spinRing 4s linear infinite;}
+@keyframes spinRing{to{transform:rotate(360deg);}}
+.profile-name{font-size:17px;font-weight:bold;margin-bottom:3px;}
+.profile-id{font-size:11px;color:var(--gold);font-family:'Orbitron',monospace;letter-spacing:2px;}
+.balance-box{background:linear-gradient(135deg,rgba(180,10,10,.2),rgba(100,5,5,.15));border:1px solid rgba(180,20,20,.4);border-radius:12px;padding:12px;margin-top:13px;}
+.balance-label{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.balance-amount{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;color:var(--gold);text-shadow:0 0 18px rgba(255,215,0,.4);}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.info-card{background:var(--card-bg);border:1px solid rgba(180,20,20,.2);border-radius:12px;padding:12px;backdrop-filter:blur(10px);}
+.info-label{font-size:9px;color:var(--muted);margin-bottom:4px;}
+.info-value{font-size:12px;color:var(--text);word-break:break-all;}
+.info-value.pass{filter:blur(4px);transition:filter .3s;cursor:pointer;}
+.info-value.pass:hover,.info-value.pass:active{filter:none;}
+.edit-profile-btn{width:100%;padding:10px;background:rgba(30,10,10,.8);border:1px solid rgba(180,20,20,.35);border-radius:11px;color:var(--accent);font-size:12px;font-family:'Tiro Bangla',serif;cursor:pointer;transition:all .3s;}
+.edit-profile-btn:hover{background:rgba(180,10,10,.2);}
+
+/* REFER */
+.refer-hero{background:var(--card-bg);border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:18px;margin-bottom:16px;text-align:center;backdrop-filter:blur(15px);}
+.refer-hero h3{font-size:14px;color:var(--gold);margin-bottom:5px;}
+.refer-hero p{font-size:11px;color:var(--muted);}
+.link-box{background:rgba(10,5,0,.8);border:1px solid rgba(255,215,0,.2);border-radius:9px;padding:9px 11px;margin:12px 0;display:flex;align-items:center;gap:7px;}
+.link-box span{font-size:9px;color:var(--gold);flex:1;word-break:break-all;font-family:'Orbitron',monospace;}
+.refer-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px;}
+.stat-card{background:var(--card-bg);border:1px solid rgba(180,20,20,.2);border-radius:12px;padding:12px;text-align:center;backdrop-filter:blur(10px);}
+.stat-val{font-family:'Orbitron',monospace;font-size:19px;font-weight:900;color:var(--gold);}
+.stat-lbl{font-size:9px;color:var(--muted);margin-top:4px;}
+.refer-list-title{font-size:12px;color:var(--muted);margin-bottom:9px;}
+.refer-user{background:var(--card-bg);border:1px solid rgba(180,20,20,.2);border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.ru-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--crimson),var(--accent));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.ru-info{flex:1;}
+.ru-name{font-size:12px;font-weight:bold;}
+.ru-status{font-size:10px;margin-top:2px;}
+.ru-bonus{font-size:12px;color:var(--green);font-weight:bold;font-family:'Orbitron',monospace;}
+
+/* REFER PROGRESS */
+.refer-progress-wrap{background:var(--card-bg);border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:18px;margin-bottom:16px;backdrop-filter:blur(15px);}
+.rp-title{font-size:13px;color:var(--gold);font-weight:bold;margin-bottom:14px;text-align:center;}
+.rp-bar-track{position:relative;height:10px;background:rgba(255,255,255,.07);border-radius:10px;margin:0 0 10px;}
+.rp-bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--crimson),var(--gold));transition:width .8s cubic-bezier(.34,1.56,.64,1);position:relative;}
+.rp-bar-fill::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:14px;height:14px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px var(--gold);border:2px solid #000;}
+.rp-milestones{display:flex;justify-content:space-between;position:relative;margin-bottom:4px;}
+.rp-ms{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;}
+.rp-ms-dot{width:11px;height:11px;border-radius:50%;border:2px solid rgba(255,215,0,.3);background:rgba(20,5,5,.9);transition:all .4s;flex-shrink:0;}
+.rp-ms-dot.reached{background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px var(--gold);}
+.rp-ms-dot.claimed{background:var(--green);border-color:var(--green);box-shadow:0 0 8px var(--green);}
+.rp-ms-num{font-family:'Orbitron',monospace;font-size:9px;color:var(--muted);}
+.rp-ms-num.reached{color:var(--gold);}
+.rp-ms-reward{font-size:8px;color:var(--muted);white-space:nowrap;}
+.rp-ms-reward.reached{color:var(--green);}
+.rp-count{text-align:center;font-size:11px;color:var(--muted);margin-top:8px;}
+.rp-count strong{color:var(--gold);font-family:'Orbitron',monospace;}
+.rp-rewards-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
+.rp-reward-card{background:rgba(10,5,0,.8);border:1px solid rgba(255,215,0,.15);border-radius:11px;padding:10px 6px;text-align:center;transition:all .3s;}
+.rp-reward-card.reached{border-color:rgba(255,215,0,.4);background:rgba(40,25,0,.5);}
+.rp-reward-card.claimed{border-color:rgba(0,200,0,.4);background:rgba(0,30,0,.4);}
+.rp-reward-icon{font-size:18px;margin-bottom:4px;}
+.rp-reward-count{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.rp-reward-count.reached{color:var(--gold);}
+.rp-reward-amt{font-family:'Orbitron',monospace;font-size:13px;font-weight:bold;color:var(--accent);}
+.rp-reward-amt.reached{color:var(--gold);}
+.rp-reward-amt.claimed{color:var(--green);}
+.rp-claim-btn{margin-top:7px;width:100%;padding:5px;background:linear-gradient(135deg,#006600,#00aa00);border:none;border-radius:7px;color:#fff;font-size:9px;font-family:'Tiro Bangla',serif;cursor:pointer;transition:all .2s;}
+.rp-claim-btn:hover{transform:scale(1.05);}
+.rp-claimed-lbl{margin-top:7px;font-size:9px;color:var(--green);}
+
+/* PLAN + BOX ROW */
+.plan-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:stretch;margin-bottom:14px;}
+.plan-row .plan-card{margin:0;}
+
+/* TREASURE CHEST WRAPPER */
+.plan-box{
+  width:90px;min-height:110px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;
+  border-radius:16px;cursor:pointer;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  position:relative;overflow:hidden;padding:6px 4px 10px;
+  background:transparent;border:none;
+}
+.plan-box.locked-box{opacity:.45;cursor:not-allowed;filter:grayscale(.6);}
+.plan-box.opened-box .tc-lid{transform:rotateX(-110deg)!important;animation:none!important;}
+.plan-box.active-box{filter:drop-shadow(0 0 12px rgba(255,200,0,.55)) drop-shadow(0 0 28px rgba(255,140,0,.3));}
+.plan-box.active-box{animation:chestFloat 3s ease-in-out infinite;}
+@keyframes chestFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+.plan-box.active-box:hover{transform:scale(1.08) translateY(-4px);}
+
+/* ── CHEST SVG STRUCTURE ── */
+.tc-wrap{position:relative;width:72px;height:68px;flex-shrink:0;}
+
+/* BODY */
+.tc-body{
+  position:absolute;bottom:0;left:0;right:0;height:38px;
+  border-radius:3px 3px 8px 8px;
+  background:linear-gradient(180deg,#c0390a 0%,#8b1a00 40%,#6b1000 100%);
+  border:2px solid #e8a000;
+  box-shadow:inset 0 3px 6px rgba(255,160,0,.2),inset 0 -3px 5px rgba(0,0,0,.5),0 4px 10px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+.tc-body::before{/* wood planks */
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent,transparent 22px,rgba(0,0,0,.15) 22px,rgba(0,0,0,.15) 23px);
+}
+/* gold band bottom */
+.tc-body-band{
+  position:absolute;bottom:0;left:0;right:0;height:12px;
+  background:linear-gradient(180deg,#f5c200,#c88000 50%,#a86000);
+  border-top:1px solid #ffd700;
+  border-radius:0 0 6px 6px;
+}
+/* keyhole plate */
+.tc-keyhole{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
+  width:18px;height:18px;
+  background:radial-gradient(circle at 40% 35%,#ffe066,#c8880a 60%,#7a4e00);
+  border-radius:50%;
+  border:1.5px solid #ffd700;
+  box-shadow:0 0 6px rgba(255,200,0,.7),inset 0 2px 3px rgba(255,230,100,.4);
+  z-index:3;
+}
+.tc-keyhole::after{
+  content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+  width:5px;height:7px;
+  background:linear-gradient(180deg,#c8880a,#7a4e00);
+  border-radius:0 0 3px 3px;
+  border:1px solid #ffd700;
+  border-top:none;
+}
+
+/* LID */
+.tc-lid{
+  position:absolute;top:0;left:0;right:0;height:36px;
+  border-radius:8px 8px 3px 3px;
+  background:linear-gradient(180deg,#e04010 0%,#b02000 55%,#8b1500 100%);
+  border:2px solid #e8a000;
+  box-shadow:inset 0 3px 8px rgba(255,180,0,.25),inset 0 -2px 5px rgba(0,0,0,.4),0 -3px 8px rgba(0,0,0,.4);
+  transform-origin:center bottom;
+  transition:transform .5s cubic-bezier(.34,1.56,.64,1);
+  overflow:hidden;z-index:2;
+}
+.tc-lid::before{/* wood planks */
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent,transparent 22px,rgba(0,0,0,.12) 22px,rgba(0,0,0,.12) 23px);
+}
+/* gold band on lid */
+.tc-lid-band{
+  position:absolute;bottom:0;left:0;right:0;height:10px;
+  background:linear-gradient(180deg,#f5c200,#c88000 50%,#a86000);
+  border-top:1px solid #ffd700;
+}
+/* gold hinge bumps */
+.tc-hinge{
+  position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);
+  display:flex;gap:18px;z-index:4;
+}
+.tc-hinge span{
+  width:10px;height:8px;
+  background:radial-gradient(circle at 40% 30%,#ffe066,#c88000 70%,#7a4e00);
+  border-radius:50% 50% 40% 40%;
+  border:1px solid #ffd700;
+  box-shadow:0 2px 4px rgba(0,0,0,.5);
+}
+/* inner red velvet */
+.tc-inner{
+  position:absolute;inset:3px;border-radius:5px 5px 2px 2px;
+  background:linear-gradient(180deg,#c0001a,#8b000f);
+  opacity:0;transition:opacity .4s;
+}
+.plan-box.active-box:hover .tc-lid{transform:rotateX(-50deg);}
+.plan-box.active-box:hover .tc-inner{opacity:1;}
+
+/* COINS inside lid-open */
+.tc-coins-peek{
+  position:absolute;top:28px;left:50%;transform:translateX(-50%);
+  font-size:11px;letter-spacing:1px;opacity:0;
+  transition:opacity .3s .1s;z-index:1;
+  white-space:nowrap;
+}
+.plan-box.active-box:hover .tc-coins-peek{opacity:1;}
+
+/* gold rim top of body */
+.tc-rim{
+  position:absolute;top:30px;left:-2px;right:-2px;height:10px;z-index:3;
+  background:linear-gradient(180deg,#f5c200,#c88000 60%,#a86000);
+  border-top:1.5px solid #ffd700;border-bottom:1.5px solid #a06000;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+
+/* GLOW SPARKS */
+.tc-spark{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,#ffe566,rgba(255,200,0,0));
+  opacity:0;animation:tcSpark 2.2s ease-in-out infinite;
+}
+.tc-spark:nth-child(1){width:8px;height:8px;top:2px;left:58%;animation-delay:0s;}
+.tc-spark:nth-child(2){width:6px;height:6px;top:5px;left:30%;animation-delay:.7s;}
+.tc-spark:nth-child(3){width:5px;height:5px;top:10px;left:72%;animation-delay:1.4s;}
+@keyframes tcSpark{
+  0%{opacity:0;transform:translateY(0) scale(.5);}
+  40%{opacity:1;transform:translateY(-10px) scale(1.3);}
+  100%{opacity:0;transform:translateY(-20px) scale(.3);}
+}
+/* sweep shimmer */
+.tc-sweep{
+  position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,220,80,.18),transparent);
+  animation:tcSweep 3s ease-in-out infinite;pointer-events:none;
+}
+@keyframes tcSweep{0%{left:-100%;}55%,100%{left:150%;}}
+
+/* COIN STACK underneath */
+.tc-stack{
+  display:flex;align-items:flex-end;gap:2px;margin-top:2px;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));
+}
+.tc-coin{
+  width:10px;height:5px;border-radius:50%;
+  background:radial-gradient(circle at 40% 30%,#ffe566,#c88000 70%,#7a4e00);
+  border:1px solid #ffd700;margin-bottom:0;
+}
+.tc-coin:nth-child(2){margin-bottom:3px;}
+.tc-coin:nth-child(3){margin-bottom:6px;}
+
+.pb-reward{
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:900;
+  color:#ffd700;text-shadow:0 0 10px rgba(255,200,0,.8);letter-spacing:.5px;
+  margin-top:1px;
+}
+.pb-label{font-size:7.5px;text-align:center;line-height:1.4;color:rgba(255,180,80,.7);padding:0 2px;}
+.plan-box.opened-box .pb-label{color:#00e676;}
+.plan-box.locked-box .pb-label{color:rgba(120,80,40,.6);}
+
+@media(max-width:500px){
+  .plan-box{width:74px;min-height:95px;}
+  .tc-wrap{width:58px;height:55px;}
+  .tc-lid{height:28px;}
+  .tc-body{height:30px;}
+  .tc-rim{top:24px;}
+}
+
+/* SUPPORT */
+.support-card{background:var(--card-bg);border:1px solid rgba(180,20,20,.2);border-radius:16px;padding:20px;margin-bottom:14px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .3s;backdrop-filter:blur(15px);text-decoration:none;}
+.support-card:hover{transform:translateY(-4px);box-shadow:0 12px 35px rgba(180,0,0,.3);}
+.support-card .sc-icon{font-size:38px;flex-shrink:0;}
+.support-card .sc-info h3{font-size:15px;font-weight:bold;margin-bottom:4px;}
+.support-card .sc-info p{font-size:11px;color:var(--muted);}
+.support-card .sc-num{font-family:'Orbitron',monospace;font-size:12px;color:var(--gold);margin-top:5px;}
+.support-card.whatsapp{border-color:rgba(37,211,102,.3);}
+.support-card.whatsapp:hover{box-shadow:0 12px 35px rgba(37,211,102,.2);}
+.support-card.telegram{border-color:rgba(0,136,204,.3);}
+.support-card.telegram:hover{box-shadow:0 12px 35px rgba(0,136,204,.2);}
+.support-hours{background:rgba(10,5,5,.8);border:1px solid rgba(180,20,20,.2);border-radius:12px;padding:13px;text-align:center;font-size:12px;color:var(--muted);}
+.support-hours strong{color:var(--gold);display:block;margin-bottom:5px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{background:rgba(10,2,2,.97);border:1px solid rgba(180,20,20,.5);border-radius:22px;padding:24px;width:100%;max-width:370px;animation:modalIn .4s cubic-bezier(.34,1.56,.64,1);position:relative;}
+@keyframes modalIn{from{transform:scale(.7) translateY(40px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+.modal h3{font-family:'Cinzel Decorative',serif;font-size:14px;color:var(--gold);margin-bottom:13px;text-align:center;}
+.modal-close{position:absolute;top:13px;right:13px;background:none;border:none;color:var(--muted);font-size:19px;cursor:pointer;transition:color .2s;}
+.modal-close:hover{color:var(--accent);}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(100px);background:linear-gradient(135deg,rgba(20,5,5,.97),rgba(60,10,10,.97));border:1px solid rgba(230,57,70,.4);color:var(--text);padding:10px 20px;border-radius:28px;font-size:12px;z-index:999;backdrop-filter:blur(20px);box-shadow:0 10px 40px rgba(180,0,0,.4);transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--darker);}
+::-webkit-scrollbar-thumb{background:var(--crimson);border-radius:2px;}
+@media(max-width:500px){
+  .sidebar{width:66px;} .main{margin-left:66px;padding:16px 12px;} :root{--sidebar-w:66px;}
+  .nav-btn{width:52px;height:50px;font-size:7.5px;} .nav-btn .icon{font-size:17px;}
+  .info-grid{grid-template-columns:1fr;} .checkin-grid{grid-template-columns:repeat(4,1fr);}
+  .refer-stats{grid-template-columns:1fr 1fr;} .amount-grid{grid-template-columns:repeat(3,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="bg-canvas"></div>
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-orb auth-orb-1"></div>
+  <div class="auth-orb auth-orb-2"></div>
+  <div class="auth-box">
+
+    <div class="auth-logo-wrap">
+      <div class="auth-logo">☁️ Akatsuki</div>
+      <div class="auth-tagline">INVESTMENT PLATFORM</div>
+    </div>
+
+    <!-- WELCOME (দুটো বাটন) -->
+    <div id="auth-welcome">
+      <div class="auth-card">
+        <div class="welcome-icon">🏦</div>
+        <div class="welcome-title">স্বাগতম!</div>
+        <div class="welcome-sub">আপনার বিনিয়োগ যাত্রা শুরু করুন</div>
+        <div class="welcome-btns">
+          <button class="wb-btn wb-login" onclick="showAuthForm('login')">
+            <span class="wb-icon">🔐</span>
+            <div>
+              <div class="wb-main">লগইন করুন</div>
+              <div class="wb-hint">আগেই আইডি আছে</div>
+            </div>
+            <span class="wb-arrow">›</span>
+          </button>
+          <button class="wb-btn wb-register" onclick="showAuthForm('register')">
+            <span class="wb-icon">✨</span>
+            <div>
+              <div class="wb-main">নতুন আইডি খুলুন</div>
+              <div class="wb-hint">বিনামূল্যে নিবন্ধন করুন</div>
+            </div>
+            <span class="wb-arrow">›</span>
+          </button>
+        </div>
+        <button class="wb-guest" onclick="enterGuest()">👁️ গেস্ট হিসেবে দেখুন</button>
+        <div class="welcome-footer">🔒 সম্পূর্ণ নিরাপদ ও বিশ্বস্ত</div>
+      </div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="auth-login" style="display:none">
+      <div class="auth-card">
+        <button class="auth-back" onclick="showAuthForm('welcome')">‹ ফিরে যান</button>
+        <div class="auth-form-title">🔐 লগইন</div>
+        <div class="auth-field">
+          <label>📱 ফোন নম্বর</label>
+          <input type="tel" id="l-phone" placeholder="01XXXXXXXXX" maxlength="15">
+        </div>
+        <div class="auth-field">
+          <label>🔒 পাসওয়ার্ড</label>
+          <input type="password" id="l-pass" placeholder="পাসওয়ার্ড দিন" onkeydown="if(event.key==='Enter')doAuthLogin()">
+        </div>
+        <button class="auth-submit" onclick="doAuthLogin()">🚀 প্রবেশ করুন</button>
+        <div class="auth-err" id="l-err"></div>
+        <div class="auth-bottom">নতুন ইউজার? <span onclick="showAuthForm('register')">নিবন্ধন করুন →</span></div>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="auth-register" style="display:none">
+      <div class="auth-card">
+        <button class="auth-back" onclick="showAuthForm('welcome')">‹ ফিরে যান</button>
+        <div class="auth-form-title">✨ নতুন আইডি</div>
+        <div class="auth-field">
+          <label>👤 আপনার নাম</label>
+          <input type="text" id="r-name" placeholder="আপনার পূর্ণ নাম">
+        </div>
+        <div class="auth-field">
+          <label>📱 ফোন নম্বর</label>
+          <input type="tel" id="r-phone" placeholder="01XXXXXXXXX" maxlength="15">
+        </div>
+        <div class="auth-field">
+          <label>🔒 পাসওয়ার্ড তৈরি করুন</label>
+          <input type="password" id="r-pass" placeholder="কমপক্ষে ৬ অক্ষর">
+        </div>
+        <div class="auth-field">
+          <label>🔒 পাসওয়ার্ড নিশ্চিত করুন</label>
+          <input type="password" id="r-pass2" placeholder="পাসওয়ার্ড আবার দিন" onkeydown="if(event.key==='Enter')doAuthRegister()">
+        </div>
+        <div class="auth-field">
+          <label>🔗 রেফার কোড <span style="color:var(--muted);font-size:10px">(ঐচ্ছিক)</span></label>
+          <input type="text" id="r-ref" placeholder="যেমন: AKT1234 বা পুরো লিংক">
+        </div>
+        <button class="auth-submit" onclick="doAuthRegister()">🎉 আইডি তৈরি করুন</button>
+        <div class="auth-err" id="r-err"></div>
+        <div class="auth-bottom">আগেই আইডি আছে? <span onclick="showAuthForm('login')">লগইন করুন →</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" style="display:none">
+  <div class="sidebar-logo"><span>☁️</span>AKATSUKI</div>
+  <button class="nav-btn active" onclick="navigate('home',this)"><span class="icon">🏠</span>হোম</button>
+  <button class="nav-btn" onclick="navigate('notif',this)"><span class="icon">🔔</span>নোটিস</button>
+  <button class="nav-btn" onclick="navigate('payment',this)"><span class="icon">💳</span>পেমেন্ট</button>
+  <button class="nav-btn" onclick="navigate('profile',this)"><span class="icon">👤</span>প্রোফাইল</button>
+  <button class="nav-btn" onclick="navigate('refer',this)"><span class="icon">🔗</span>রেফার</button>
+  <button class="nav-btn" onclick="navigate('support',this)"><span class="icon">🎧</span>সাপোর্ট</button>
+  <!-- guest login btn -->
+  <button class="nav-btn guest-login-nav" id="sidebar-login-btn" style="display:none;margin-top:auto;background:linear-gradient(135deg,rgba(180,20,20,.3),rgba(230,57,70,.2));border:1px solid rgba(230,57,70,.4);border-radius:12px;margin:auto 10px 12px;" onclick="guestToLogin()">
+    <span class="icon">🔐</span>লগইন / নিবন্ধন করুন
+  </button>
+</nav>
+
+<main class="main" style="display:none">
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="page-header"><h1>☁️ Akatsuki Plans</h1><p>পছন্দের প্ল্যান বেছে নিন — প্রতিদিন আয় করুন</p></div>
+
+  <div id="plans-grid-dynamic"></div>
+
+  <!-- DAILY CHECK-IN -->
+  <div class="section-block">
+    <div class="section-title">📅 ডেইলি চেক-ইন — প্রতিদিন বোনাস নিন!</div>
+    <div class="checkin-grid" id="checkin-grid"></div>
+    <button class="checkin-btn" id="checkin-btn" onclick="doCheckIn()">লোড হচ্ছে...</button>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="page" id="page-notif">
+  <div class="page-header"><h1>🔔 নোটিফিকেশন</h1><p>আপনার সব লেনদেনের তথ্য</p></div>
+  <div class="notif-list" id="notif-list">
+    <div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px;">
+      <div style="font-size:40px;margin-bottom:10px">🔔</div>
+      এখনো কোনো নোটিফিকেশন নেই
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT -->
+<div class="page" id="page-payment">
+  <div class="page-header"><h1>💳 পেমেন্ট</h1><p>ডিপোজিট ও উত্তোলন পরিচালনা করুন</p></div>
+  <div class="payment-tabs">
+    <button class="tab-btn active" onclick="switchTab('deposit',this)">⬇️ ডিপোজিট</button>
+    <button class="tab-btn" onclick="switchTab('withdraw',this)">⬆️ উত্তোলন</button>
+  </div>
+
+  <div class="tab-content active" id="tab-deposit">
+    <div class="admin-box">
+      <div class="ab-icon">📲</div>
+      <div class="ab-info">
+        <div class="ab-label">⬇️ এই নম্বরে পাঠান (Admin)</div>
+        <div class="ab-number">01723-268974</div>
+        <div class="ab-note">bKash / Nagad / Rocket যেকোনোটি ব্যবহার করুন</div>
+      </div>
+      <button class="copy-btn" onclick="copyNumber()">📋 কপি</button>
+    </div>
+    <div class="method-grid">
+      <div class="method-item selected" onclick="selectMethod(this)"><span class="m-icon">📱</span>bKash</div>
+      <div class="method-item" onclick="selectMethod(this)"><span class="m-icon">🔵</span>Nagad</div>
+      <div class="method-item" onclick="selectMethod(this)"><span class="m-icon">🟠</span>Rocket</div>
+    </div>
+    <div class="form-group"><label>আপনার নম্বর (প্রেরক)</label><input type="tel" id="dep-sender" placeholder="01XXXXXXXXX"></div>
+    <div class="form-group"><label>পরিমাণ (টাকা)</label><input type="number" id="dep-amount" placeholder="১০০০" min="100"></div>
+    <div class="form-group"><label>ট্রানজেকশন আইডি (TrxID)</label><input type="text" id="dep-trxid" placeholder="TrxID দিন..."></div>
+    <button class="submit-btn" onclick="submitDeposit()">📤 ডিপোজিট রিকোয়েস্ট পাঠান</button>
+    <div id="dep-pending-list"></div>
+  </div>
+
+  <div class="tab-content" id="tab-withdraw">
+    <div class="withdraw-cond">
+      <strong>⚠️ উত্তোলনের শর্তাবলী</strong>
+      <div class="cond-item"><span id="cond-plan-icon" class="cond-no">✗</span>&nbsp;একটি সক্রিয় প্ল্যান থাকতে হবে</div>
+      <div class="cond-item"><span id="cond-refer-icon" class="cond-no">✗</span>&nbsp;রেফারে একজন সক্রিয় প্ল্যান কিনেছে এমন থাকতে হবে</div>
+    </div>
+    <div class="method-grid">
+      <div class="method-item selected" onclick="selectMethod(this)"><span class="m-icon">📱</span>bKash</div>
+      <div class="method-item" onclick="selectMethod(this)"><span class="m-icon">🔵</span>Nagad</div>
+      <div class="method-item" onclick="selectMethod(this)"><span class="m-icon">🟠</span>Rocket</div>
+    </div>
+    <div class="form-group"><label>উত্তোলনের নম্বর</label><input type="tel" placeholder="01XXXXXXXXX" id="wd-number"></div>
+    <div class="form-group">
+      <label>পরিমাণ বেছে নিন</label>
+      <div class="amount-grid">
+        <div class="amount-chip" onclick="selectAmount(this,500)">৳৫০০</div>
+        <div class="amount-chip selected" onclick="selectAmount(this,1000)">৳১,০০০</div>
+        <div class="amount-chip" onclick="selectAmount(this,1500)">৳১,৫০০</div>
+        <div class="amount-chip" onclick="selectAmount(this,2000)">৳২,০০০</div>
+        <div class="amount-chip" onclick="selectAmount(this,3000)">৳৩,০০০</div>
+        <div class="amount-chip" onclick="selectAmount(this,4000)">৳৪,০০০</div>
+        <div class="amount-chip" onclick="selectAmount(this,5000)">৳৫,০০০</div>
+      </div>
+    </div>
+    <button class="submit-btn" id="wd-btn" onclick="doWithdraw()">উত্তোলন করুন</button>
+    <p class="min-note">সর্বনিম্ন উত্তোলন: <span>৳১,০০০</span></p>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="page-header"><h1>👤 প্রোফাইল</h1><p>আপনার একাউন্ট তথ্য</p></div>
+  <div class="profile-hero">
+    <div class="avatar">🧑<div class="avatar-ring"></div></div>
+    <div class="profile-name" id="disp-name"></div>
+    <div class="profile-id">AKT-<span id="disp-uid"></span></div>
+    <div class="balance-box" id="balance-box">
+      <div class="balance-label">💰 বর্তমান ব্যালান্স</div>
+      <div class="balance-amount">৳ <span id="disp-balance">0</span></div>
+    </div>
+  </div>
+
+  <!-- guest prompt -->
+  <div id="guest-profile-prompt" style="display:none;background:rgba(180,20,20,.1);border:1px solid rgba(230,57,70,.3);border-radius:14px;padding:20px;text-align:center;margin-bottom:14px;">
+    <div style="font-size:36px;margin-bottom:10px">🔐</div>
+    <div style="font-size:14px;font-weight:bold;margin-bottom:6px">আইডি খুলুন বা লগইন করুন</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">ব্যালান্স, প্ল্যান ও সব তথ্য দেখতে আইডি লাগবে</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="guestToLogin()" style="padding:10px 20px;background:linear-gradient(135deg,var(--crimson),var(--accent));border:none;border-radius:10px;color:#fff;font-size:13px;font-family:'Tiro Bangla',serif;cursor:pointer;">🔐 লগইন করুন</button>
+      <button onclick="showAuthForm('register');guestToLogin();" style="padding:10px 20px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:10px;color:var(--gold);font-size:13px;font-family:'Tiro Bangla',serif;cursor:pointer;">✨ নতুন আইডি</button>
+    </div>
+  </div>
+
+  <div id="real-profile-info">
+    <div class="info-grid">
+      <div class="info-card"><div class="info-label">📛 নাম</div><div class="info-value" id="prof-name"></div></div>
+      <div class="info-card"><div class="info-label">📱 নম্বর</div><div class="info-value" id="prof-phone"></div></div>
+      <div class="info-card"><div class="info-label">🆔 আইডি (স্থায়ী)</div><div class="info-value" id="prof-uid" style="color:var(--gold);font-family:'Orbitron',monospace;font-size:11px;"></div></div>
+      <div class="info-card"><div class="info-label">📅 যোগদান</div><div class="info-value" id="prof-joined">—</div></div>
+      <div class="info-card"><div class="info-label">📦 সক্রিয় প্ল্যান</div><div class="info-value" id="prof-plan">কোনো প্ল্যান নেই</div></div>
+      <div class="info-card"><div class="info-label">✅ মোট আয়</div><div class="info-value" id="prof-total-earn" style="color:var(--gold)">৳ 0</div></div>
+      <div class="info-card" style="grid-column:1/-1"><div class="info-label">🔒 পাসওয়ার্ড (ট্যাপ করে দেখুন)</div><div class="info-value pass" id="prof-pass-disp">••••••••</div></div>
+    </div>
+    <button class="edit-profile-btn" onclick="openEditModal()">✏️ প্রোফাইল এডিট করুন</button>
+    <button class="edit-profile-btn" onclick="doLogout()" style="margin-top:8px;color:var(--accent);border-color:rgba(230,57,70,.3);">🚪 লগআউট</button>
+  </div>
+
+  <!-- guest: only show logout -->
+  <div id="guest-profile-btns" style="display:none">
+    <button class="edit-profile-btn" onclick="doLogout()" style="color:var(--muted);">🚪 গেস্ট মোড থেকে বের হন</button>
+  </div>
+</div>
+
+<!-- REFER -->
+<div class="page" id="page-refer">
+  <div class="page-header"><h1>🔗 রেফার প্রোগ্রাম</h1><p>বন্ধুদের আমন্ত্রণ জানান, বোনাস উপার্জন করুন!</p></div>
+
+  <!-- Invite Link -->
+  <div class="refer-hero">
+    <h3>🎉 আপনার ইনভাইট লিংক</h3>
+    <p>বন্ধু এই লিংক দিয়ে যোগ দিলে ও প্ল্যান কিনলে আপনি ১০% বোনাস পাবেন</p>
+    <div class="link-box">
+      <span id="refer-link-text">akatsuki.app/join?ref=AKT0000</span>
+      <button class="copy-btn" onclick="copyReferLink()">📋 কপি</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.8;">
+      🌱 ৳১,০০০ প্ল্যান → <span style="color:var(--green)">৳১০০ বোনাস</span>&nbsp;&nbsp;
+      🔥 ৳১,৫০০ → <span style="color:var(--green)">৳১৫০</span><br>
+      💎 ৳২,০০০ → <span style="color:var(--green)">৳২০০</span>&nbsp;&nbsp;
+      👑 ৳৩,০০০ → <span style="color:var(--green)">৳৩০০</span>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="refer-progress-wrap">
+    <div class="rp-title">🏆 রেফার মাইলস্টোন — রিওয়ার্ড প্রোগ্রেস</div>
+
+    <!-- milestone dots row -->
+    <div class="rp-milestones" id="rp-milestones"></div>
+
+    <!-- bar -->
+    <div class="rp-bar-track">
+      <div class="rp-bar-fill" id="rp-bar-fill" style="width:0%"></div>
+    </div>
+
+    <div class="rp-count">মোট রেফার: <strong id="rp-count-num">0</strong> / 20</div>
+
+    <!-- reward cards -->
+    <div class="rp-rewards-row" id="rp-rewards-row"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="refer-stats">
+    <div class="stat-card"><div class="stat-val" id="refer-total-count">0</div><div class="stat-lbl">মোট রেফার</div></div>
+    <div class="stat-card"><div class="stat-val" id="refer-active-count">0</div><div class="stat-lbl">সক্রিয় প্ল্যান</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:13px;color:var(--green)" id="refer-bonus-total">৳০</div><div class="stat-lbl">বোনাস আয়</div></div>
+  </div>
+
+  <div class="refer-list-title">👥 রেফার করা সদস্য</div>
+  <div id="refer-users-list">
+    <div style="text-align:center;color:var(--muted);padding:25px 0;font-size:12px;">
+      <div style="font-size:36px;margin-bottom:8px">🔗</div>
+      এখনো কাউকে রেফার করেননি<br>
+      <span style="font-size:11px">লিংক শেয়ার করুন, বোনাস উপার্জন করুন!</span>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT -->
+<div class="page" id="page-support">
+  <div class="page-header"><h1>🎧 সাপোর্ট</h1><p>যেকোনো সমস্যায় আমাদের সাথে যোগাযোগ করুন</p></div>
+  <a href="https://wa.me/8801723268974" target="_blank" class="support-card whatsapp">
+    <div class="sc-icon">💬</div>
+    <div class="sc-info"><h3 style="color:#25D366">WhatsApp</h3><p>দ্রুত সাড়া পেতে মেসেজ করুন</p><div class="sc-num">+880 1723-268974</div></div>
+    <div style="font-size:20px;color:#25D366">→</div>
+  </a>
+  <a href="https://t.me/Akatsuki_support" target="_blank" class="support-card telegram">
+    <div class="sc-icon">✈️</div>
+    <div class="sc-info"><h3 style="color:#0088CC">Telegram</h3><p>Telegram এ যোগ দিন আপডেট পেতে</p><div class="sc-num">@Akatsuki_support</div></div>
+    <div style="font-size:20px;color:#0088CC">→</div>
+  </a>
+  <div class="support-hours"><strong>🕐 সাপোর্ট সময়</strong>প্রতিদিন সকাল ৯টা — রাত ১১টা<br><span style="color:var(--accent);margin-top:5px;display:block">জরুরি প্রয়োজনে WhatsApp এ মেসেজ করুন</span></div>
+</div>
+
+</main>
+
+<!-- PLAN MODAL -->
+<div class="modal-overlay" id="planModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('planModal')">✕</button>
+    <h3>🛒 প্ল্যান নিশ্চিত করুন</h3>
+    <div id="modal-body"></div>
+    <button class="submit-btn" onclick="confirmPlan()" style="margin-top:14px">💳 পেমেন্ট করতে যান →</button>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+    <h3>✏️ প্রোফাইল এডিট</h3>
+    <div class="form-group"><label>📛 নাম</label><input type="text" id="edit-name" placeholder="আপনার নাম"></div>
+    <div class="form-group"><label>📱 নম্বর</label><input type="tel" id="edit-phone" placeholder="01XXXXXXXXX"></div>
+    <div class="form-group"><label>🔒 নতুন পাসওয়ার্ড</label><input type="password" id="edit-pass" placeholder="নতুন পাসওয়ার্ড (না বদলাতে ফাঁকা রাখুন)"></div>
+    <div style="background:rgba(10,5,0,.7);border:1px solid rgba(255,215,0,.2);border-radius:9px;padding:10px;margin-bottom:13px;">
+      <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">🔒 ইউজার আইডি (পরিবর্তনযোগ্য নয়)</div>
+      <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--gold);" id="edit-uid-disp"></div>
+    </div>
+    <button class="submit-btn" onclick="saveProfile()">💾 সেভ করুন</button>
+  </div>
+</div>
+
+<!-- SURPRISE WIN MODAL -->
+<div class="modal-overlay" id="surpriseModal">
+  <div class="modal" style="text-align:center;">
+    <button class="modal-close" onclick="closeModal('surpriseModal')">✕</button>
+    <div style="font-size:56px;margin-bottom:10px;" id="sw-emoji">🎊</div>
+    <h3 id="sw-title">অভিনন্দন!</h3>
+    <div id="sw-body"></div>
+    <button class="submit-btn" onclick="closeModal('surpriseModal')" style="margin-top:14px">🎊 দারুণ!</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ STATE ═══
+let USER = {
+  name:'', phone:'', pass:'',
+  uid:'', balance:0, hasActivePlan:false, hasActiveRefer:false,
+  planName:'কোনো প্ল্যান নেই', planPrice:0, planDaily:0
+};
+
+const ALL_PLANS = [
+  {price:1000, daily:70,  emoji:'🌱', popular:false, label:'৳১,০০০'},
+  {price:1500, daily:100, emoji:'🔥', popular:true,  label:'৳১,৫০০'},
+  {price:2000, daily:120, emoji:'💎', popular:false, label:'৳২,০০০'},
+  {price:3000, daily:160, emoji:'👑', popular:false, label:'৳৩,০০০'},
+];
+
+const CHECKIN_REWARDS=[5,7,10,14,19,25,32];
+let selectedWithdrawAmount=1000, selectedPlan=null;
+
+// ═══ AUTH SYSTEM ═══
+function getUsers(){return JSON.parse(localStorage.getItem('akt_all_users')||'[]');}
+function saveUsers(u){localStorage.setItem('akt_all_users',JSON.stringify(u));}
+
+// ── ডেমো একাউন্ট (একবার সেট হলে আর বদলাবে না) ──
+(function seedDemo(){
+  const users=getUsers();
+  if(!users.find(u=>u.phone==='01700000000')){
+    users.push({
+      name:'Demo User',phone:'01700000000',pass:'demo1234',
+      uid:'0000',balance:2500,hasActivePlan:true,hasActiveRefer:true,
+      planName:'৳১,০০০ প্ল্যান',planPrice:1000,planDaily:70,
+      joined:'০১ মে ২০২৬',totalEarned:4200,referredBy:''
+    });
+    saveUsers(users);
+  }
+})();
+
+function showAuthForm(view){
+  document.getElementById('auth-welcome').style.display  = view==='welcome'  ? 'block':'none';
+  document.getElementById('auth-login').style.display    = view==='login'    ? 'block':'none';
+  document.getElementById('auth-register').style.display = view==='register' ? 'block':'none';
+  ['l-err','r-err'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
+}
+function switchTab(v){showAuthForm(v);}
+function showErr(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block';setTimeout(()=>e.style.display='none',3500);}
+
+function doAuthRegister(){
+  const name=document.getElementById('r-name').value.trim();
+  const phone=document.getElementById('r-phone').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const pass2=document.getElementById('r-pass2').value;
+  const refCode=document.getElementById('r-ref').value.trim();
+  if(!name){showErr('r-err','⚠️ নাম দিন!');return;}
+  if(!phone||phone.length<11){showErr('r-err','⚠️ সঠিক ফোন নম্বর দিন!');return;}
+  if(pass.length<6){showErr('r-err','⚠️ পাসওয়ার্ড কমপক্ষে ৬ অক্ষর!');return;}
+  if(pass!==pass2){showErr('r-err','⚠️ পাসওয়ার্ড মিলছে না!');return;}
+  const users=getUsers();
+  if(users.find(u=>u.phone===phone)){showErr('r-err','⚠️ এই নম্বরে আইডি আছে! লগইন করুন।');return;}
+  // validate refer code
+  let referredBy='';
+  if(refCode){
+    const refUid=refCode.replace(/AKT/i,'').replace(/akatsuki\.app\/join\?ref=AKT/i,'').trim();
+    const referrer=users.find(u=>u.uid===refUid);
+    if(!referrer){showErr('r-err','⚠️ রেফার কোড ভুল!');return;}
+    referredBy=refUid;
+  }
+  const uid=String(Math.floor(1000+Math.random()*9000));
+  const newU={name,phone,pass,uid,balance:0,hasActivePlan:false,hasActiveRefer:false,planName:'কোনো প্ল্যান নেই',planPrice:0,planDaily:0,joined:new Date().toLocaleDateString('bn-BD'),totalEarned:0,referredBy};
+  users.push(newU); saveUsers(users);
+  localStorage.setItem('akt_session',phone);
+  enterApp(newU,false);
+  showToast('🎉 আইডি তৈরি হয়েছে! স্বাগতম '+name+'!'+(referredBy?' রেফার বোনাস যুক্ত হবে।':''));
+}
+
+function doAuthLogin(){
+  const phone=document.getElementById('l-phone').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  if(!phone){showErr('l-err','⚠️ ফোন নম্বর দিন!');return;}
+  if(!pass){showErr('l-err','⚠️ পাসওয়ার্ড দিন!');return;}
+  const u=getUsers().find(x=>x.phone===phone&&x.pass===pass);
+  if(!u){showErr('l-err','⚠️ ফোন নম্বর বা পাসওয়ার্ড ভুল!');return;}
+  localStorage.setItem('akt_session',phone);
+  enterApp(u,false);
+  showToast('✅ স্বাগতম, '+u.name+'!');
+}
+
+function enterGuest(){
+  USER.name='গেস্ট'; USER.phone=''; USER.uid='GUEST'; USER.balance=0;
+  USER.hasActivePlan=false; USER.isGuest=true;
+  USER.planName='কোনো প্ল্যান নেই'; USER.planPrice=0; USER.planDaily=0;
+  const auth=document.getElementById('authScreen');
+  const sb=document.querySelector('.sidebar');
+  const mn=document.querySelector('.main');
+  if(auth) auth.style.display='none';
+  if(sb) sb.style.display='flex';
+  if(mn) mn.style.display='block';
+  init();
+  // show login btn in sidebar
+  document.getElementById('sidebar-login-btn').style.display='flex';
+}
+
+function enterApp(u,isGuest){
+  Object.assign(USER,{name:u.name,phone:u.phone,pass:u.pass,uid:u.uid,balance:u.balance||0,hasActivePlan:u.hasActivePlan||false,hasActiveRefer:u.hasActiveRefer||false,planName:u.planName||'কোনো প্ল্যান নেই',planPrice:u.planPrice||0,planDaily:u.planDaily||0,isGuest:false});
+  const auth=document.getElementById('authScreen');
+  const sb=document.querySelector('.sidebar');
+  const mn=document.querySelector('.main');
+  if(auth) auth.style.display='none';
+  if(sb) sb.style.display='flex';
+  if(mn) mn.style.display='block';
+  document.getElementById('sidebar-login-btn').style.display='none';
+  init();
+}
+
+function persistUser(){
+  if(!USER.phone||USER.isGuest) return;
+  const users=getUsers();
+  const idx=users.findIndex(x=>x.phone===USER.phone);
+  if(idx>=0) users[idx]={...users[idx],...USER};
+  saveUsers(users);
+}
+
+function guestToLogin(){
+  // hide app, show auth login
+  document.querySelector('.sidebar').style.display='none';
+  document.querySelector('.main').style.display='none';
+  document.getElementById('authScreen').style.display='flex';
+  showAuthForm('login');
+}
+
+function doLogout(){
+  localStorage.removeItem('akt_session');
+  USER.isGuest=false;
+  document.getElementById('authScreen').style.display='flex';
+  document.querySelector('.sidebar').style.display='none';
+  document.querySelector('.main').style.display='none';
+  showAuthForm('welcome');
+}
+
+let checkinDay=parseInt(localStorage.getItem('akt_checkin_day')||'0');
+let lastCheckin=localStorage.getItem('akt_last_checkin')||'';
+const todayStr=new Date().toDateString();
+
+let boxOpenedToday = localStorage.getItem('akt_box_date')===todayStr
+  ? parseInt(localStorage.getItem('akt_box_plan')||'0') : 0;
+
+function init(){
+  document.getElementById('disp-uid').textContent=USER.uid;
+  document.getElementById('prof-uid').textContent='AKT-'+USER.uid;
+  document.getElementById('edit-uid-disp').textContent='AKT-'+USER.uid;
+  document.getElementById('refer-link-text').textContent='akatsuki.app/join?ref=AKT'+USER.uid;
+  document.getElementById('disp-name').textContent=USER.isGuest?'👁️ গেস্ট':USER.name;
+  document.getElementById('prof-name').textContent=USER.isGuest?'গেস্ট মোড':USER.name;
+  document.getElementById('prof-phone').textContent=USER.isGuest?'—':USER.phone;
+  document.getElementById('prof-plan').textContent=USER.isGuest?'—':USER.planName;
+  const joinEl=document.getElementById('prof-joined');
+  if(joinEl) joinEl.textContent=USER.isGuest?'—':(USER.joined||'—');
+  const earnEl=document.getElementById('prof-total-earn');
+  if(earnEl) earnEl.textContent='৳ '+(USER.totalEarned||0).toLocaleString();
+  applyGuestUI();
+  refreshBalance();
+  updateWithdrawConditions();
+  renderCheckin();
+  renderPlansWithBoxes();
+  renderReferProgress();
+  renderReferUsers();
+  renderDepPending();
+  renderNotifs();
+}
+
+function applyGuestUI(){
+  const isGuest = USER.isGuest;
+  // balance box
+  const bb=document.getElementById('balance-box');
+  if(bb) bb.style.display=isGuest?'none':'block';
+  // profile sections
+  const guestPrompt=document.getElementById('guest-profile-prompt');
+  const realInfo=document.getElementById('real-profile-info');
+  const guestBtns=document.getElementById('guest-profile-btns');
+  if(guestPrompt) guestPrompt.style.display=isGuest?'block':'none';
+  if(realInfo) realInfo.style.display=isGuest?'none':'block';
+  if(guestBtns) guestBtns.style.display=isGuest?'block':'none';
+}
+
+function renderReferUsers(){
+  const users=getUsers();
+  const myReferrals=users.filter(u=>u.referredBy===USER.uid);
+  document.getElementById('refer-total-count').textContent=myReferrals.length;
+  const active=myReferrals.filter(u=>u.hasActivePlan);
+  document.getElementById('refer-active-count').textContent=active.length;
+  const bonus=active.reduce((sum,u)=>sum+Math.round((u.planPrice||0)*0.1),0);
+  document.getElementById('refer-bonus-total').textContent='৳'+bonus.toLocaleString();
+  const c=document.getElementById('refer-users-list');
+  if(!myReferrals.length){c.innerHTML=`<div style="text-align:center;color:var(--muted);padding:25px 0;font-size:12px;"><div style="font-size:36px;margin-bottom:8px">🔗</div>এখনো কাউকে রেফার করেননি<br><span style="font-size:11px">লিংক শেয়ার করুন, বোনাস উপার্জন করুন!</span></div>`;return;}
+  c.innerHTML='';
+  myReferrals.forEach(u=>{
+    c.innerHTML+=`<div class="refer-user">
+      <div class="ru-avatar">👤</div>
+      <div class="ru-info">
+        <div class="ru-name">${u.name}</div>
+        <div class="ru-status" style="color:${u.hasActivePlan?'var(--green)':'var(--muted)'}">
+          ${u.hasActivePlan?'✅ সক্রিয় প্ল্যান (৳'+u.planPrice?.toLocaleString()+')'  :'⏳ প্ল্যান নেয়নি'}
+        </div>
+      </div>
+      <div class="ru-bonus" style="${!u.hasActivePlan?'color:var(--muted)':''}">${u.hasActivePlan?'+৳'+Math.round((u.planPrice||0)*0.1).toLocaleString():'—'}</div>
+    </div>`;
+  });
+}
+
+function renderNotifs(){
+  const c=document.getElementById('notif-list'); if(!c) return;
+  const notifs=JSON.parse(localStorage.getItem('akt_notifs_'+USER.uid)||'[]');
+  if(!notifs.length){
+    c.innerHTML=`<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px;"><div style="font-size:40px;margin-bottom:10px">🔔</div>এখনো কোনো নোটিফিকেশন নেই</div>`;
+    return;
+  }
+  c.innerHTML='';
+  notifs.slice().reverse().forEach(n=>{
+    c.innerHTML+=`<div class="notif-item"><div class="notif-icon">${n.icon}</div><div class="notif-text"><h4>${n.title}</h4><p>${n.msg}</p></div><div class="notif-time">${n.time}</div></div>`;
+  });
+}
+
+// ═══ NAVIGATION ═══
+function navigate(page,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  btn.classList.add('active');
+  createRipple(btn,event);
+  if(page==='payment') updateWithdrawConditions();
+}
+function createRipple(btn,e){
+  const r=document.createElement('span');r.className='ripple';
+  const rect=btn.getBoundingClientRect();
+  const x=(e?e.clientX:rect.left+rect.width/2)-rect.left;
+  const y=(e?e.clientY:rect.top+rect.height/2)-rect.top;
+  r.style.left=x+'px';r.style.top=y+'px';
+  btn.appendChild(r);setTimeout(()=>r.remove(),700);
+}
+
+// ═══ TABS ═══
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='withdraw') updateWithdrawConditions();
+}
+function selectMethod(el){
+  el.closest('.method-grid').querySelectorAll('.method-item').forEach(m=>m.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectAmount(el,val){
+  document.querySelectorAll('.amount-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedWithdrawAmount=val;
+}
+
+// ═══ DEPOSIT SUBMIT ═══
+function submitDeposit(){
+  if(USER.isGuest){showToast('🔐 ডিপোজিট করতে আগে লগইন করুন!');return;}
+  const sender=document.getElementById('dep-sender').value.trim();
+  const amount=parseFloat(document.getElementById('dep-amount').value);
+  const trxid=document.getElementById('dep-trxid').value.trim();
+  const method=document.querySelector('#tab-deposit .method-item.selected')?.textContent?.trim()||'bKash';
+  if(!sender||sender.length<11){showToast('⚠️ প্রেরকের নম্বর দিন!');return;}
+  if(!amount||amount<100){showToast('⚠️ সর্বনিম্ন ৳১০০ ডিপোজিট করুন!');return;}
+  if(!trxid){showToast('⚠️ TrxID দিন!');return;}
+
+  // save to localStorage so admin can see
+  const allDeps=JSON.parse(localStorage.getItem('akt_deposits')||'[]');
+  const existing=allDeps.find(d=>d.trxId===trxid);
+  if(existing){showToast('⚠️ এই TrxID ইতিমধ্যে জমা দেওয়া হয়েছে!');return;}
+
+  const dep={
+    id:'D'+Date.now(),userId:'AKT-'+USER.uid,userName:USER.name,
+    phone:sender,amount,method:method.replace(/[^\w]/g,'').trim()||'bKash',
+    trxId:trxid,status:'pending',time:new Date().toLocaleTimeString('bn-BD')
+  };
+  allDeps.push(dep);
+  localStorage.setItem('akt_deposits',JSON.stringify(allDeps));
+
+  // clear fields
+  document.getElementById('dep-sender').value='';
+  document.getElementById('dep-amount').value='';
+  document.getElementById('dep-trxid').value='';
+
+  renderDepPending();
+  showToast('📤 রিকোয়েস্ট পাঠানো হয়েছে! Admin যাচাই করলে ব্যালান্স যোগ হবে।');
+}
+
+function renderDepPending(){
+  const c=document.getElementById('dep-pending-list'); if(!c) return;
+  const allDeps=JSON.parse(localStorage.getItem('akt_deposits')||'[]');
+  const mine=allDeps.filter(d=>d.userId==='AKT-'+USER.uid);
+  if(!mine.length){c.innerHTML='';return;}
+  c.innerHTML=`<div style="font-size:12px;color:var(--muted);margin:16px 0 8px">📋 আপনার রিকোয়েস্ট</div>`;
+  mine.slice().reverse().forEach(d=>{
+    const col=d.status==='done'?'var(--green)':d.status==='rejected'?'var(--accent)':'var(--gold)';
+    const lbl=d.status==='done'?'✅ অনুমোদিত':d.status==='rejected'?'❌ বাতিল':'⏳ যাচাই হচ্ছে...';
+    c.innerHTML+=`<div style="background:rgba(15,5,5,.8);border:1px solid rgba(180,20,20,.2);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:bold">৳${d.amount.toLocaleString()} — ${d.method}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'Orbitron',monospace;margin-top:3px">${d.trxId}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${d.time}</div>
+      </div>
+      <div style="font-size:11px;color:${col};font-weight:bold;white-space:nowrap">${lbl}</div>
+    </div>`;
+  });
+}
+function updateWithdrawConditions(){
+  const pi=document.getElementById('cond-plan-icon');
+  const ri=document.getElementById('cond-refer-icon');
+  if(pi){pi.textContent=USER.hasActivePlan?'✓':'✗';pi.className=USER.hasActivePlan?'cond-ok':'cond-no';}
+  if(ri){ri.textContent=USER.hasActiveRefer?'✓':'✗';ri.className=USER.hasActiveRefer?'cond-ok':'cond-no';}
+  const btn=document.getElementById('wd-btn');
+  if(btn){
+    const ok=USER.hasActivePlan&&USER.hasActiveRefer;
+    btn.disabled=!ok;
+    btn.textContent=ok?'উত্তোলন করুন':'শর্ত পূরণ হয়নি ⛔';
+  }
+}
+function doWithdraw(){
+  if(!USER.hasActivePlan||!USER.hasActiveRefer){showToast('⛔ উত্তোলনের শর্ত পূরণ হয়নি!');return;}
+  const num=document.getElementById('wd-number').value.trim();
+  if(!num){showToast('⚠️ নম্বর দিন');return;}
+  if(selectedWithdrawAmount<1000){showToast('⚠️ সর্বনিম্ন ৳১,০০০ উত্তোলন করুন');return;}
+  showToast('✅ ৳'+selectedWithdrawAmount.toLocaleString()+' উত্তোলন অনুরোধ পাঠানো হয়েছে!');
+}
+
+// ═══ PLAN ═══
+function openPlan(price,daily){
+  if(USER.isGuest){showToast('🔐 প্ল্যান কিনতে আগে লগইন করুন!');return;}
+  selectedPlan={price,daily};
+  const total=daily*30;
+  document.getElementById('modal-body').innerHTML=`
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:36px;margin-bottom:7px">💰</div>
+      <div style="font-family:'Orbitron',monospace;font-size:22px;color:var(--accent)">৳${price.toLocaleString()}</div>
+      <div style="color:var(--muted);font-size:11px;margin:5px 0">বিনিয়োগের পরিমাণ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
+        <div style="background:rgba(180,10,10,.15);border:1px solid rgba(180,10,10,.3);border-radius:9px;padding:10px">
+          <div style="font-size:9px;color:var(--muted)">প্রতিদিন আয়</div>
+          <div style="color:var(--gold);font-size:18px;font-weight:bold">৳${daily}</div>
+        </div>
+        <div style="background:rgba(0,120,0,.12);border:1px solid rgba(0,150,0,.3);border-radius:9px;padding:10px">
+          <div style="font-size:9px;color:var(--muted)">৩০ দিনে মোট</div>
+          <div style="color:#7fff7f;font-size:18px;font-weight:bold">৳${total.toLocaleString()}</div>
+        </div>
+      </div>
+    </div>`;
+  openModal('planModal');
+}
+function confirmPlan(){
+  closeModal('planModal');
+  // redirect to deposit tab
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const payBtn=document.querySelector('[onclick*="payment"]');
+  if(payBtn) payBtn.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-payment').classList.add('active');
+  // switch to deposit tab
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  const depTabBtn=document.querySelector('[onclick*="deposit"]');
+  if(depTabBtn) depTabBtn.classList.add('active');
+  const depTab=document.getElementById('tab-deposit');
+  if(depTab) depTab.classList.add('active');
+  showToast('💳 TrxID পাঠান — Admin যাচাই করলে প্ল্যান সক্রিয় হবে।');
+}
+
+// ═══ PROFILE EDIT ═══
+function openEditModal(){
+  document.getElementById('edit-name').value=USER.name;
+  document.getElementById('edit-phone').value=USER.phone;
+  document.getElementById('edit-pass').value='';
+  openModal('editModal');
+}
+function saveProfile(){
+  const n=document.getElementById('edit-name').value.trim();
+  const p=document.getElementById('edit-phone').value.trim();
+  const pw=document.getElementById('edit-pass').value;
+  if(!n){showToast('⚠️ নাম দিন');return;}
+  USER.name=n; USER.phone=p;
+  if(pw) USER.pass=pw;
+  document.getElementById('disp-name').textContent=USER.name;
+  document.getElementById('prof-name').textContent=USER.name;
+  document.getElementById('prof-phone').textContent=USER.phone;
+  persistUser();
+  closeModal('editModal');
+  showToast('✅ প্রোফাইল আপডেট হয়েছে!');
+}
+function doLogout(){
+  localStorage.removeItem('akt_session');
+  document.getElementById('authScreen').style.display='flex';
+  document.querySelector('.sidebar').style.display='none';
+  document.querySelector('.main').style.display='none';
+  showAuthForm('welcome');
+}
+
+// ═══ CHECK-IN ═══
+function renderCheckin(){
+  const grid=document.getElementById('checkin-grid');
+  grid.innerHTML='';
+  const alreadyDone=lastCheckin===todayStr;
+  for(let i=0;i<7;i++){
+    const d=document.createElement('div');
+    d.className='checkin-day';
+    if(i<checkinDay) d.classList.add('claimed');
+    if(i===checkinDay&&!alreadyDone) d.classList.add('today-day');
+    d.innerHTML='<div class="day-num">'+(i+1)+'দিন</div><div class="day-coin">'+(i<checkinDay?'✅':'🪙')+'</div><div class="day-amt">৳'+CHECKIN_REWARDS[i]+'</div>';
+    grid.appendChild(d);
+  }
+  const btn=document.getElementById('checkin-btn');
+  if(checkinDay>=7){btn.disabled=true;btn.textContent='🎉 ৭ দিন সম্পূর্ণ! পুনরায় শুরু হবে';}
+  else if(alreadyDone){btn.disabled=true;btn.textContent='⏳ আবার আসুন কাল (৳'+CHECKIN_REWARDS[checkinDay]+' পাবেন)';}
+  else{btn.disabled=false;btn.textContent='✅ চেক-ইন করুন — ৳'+CHECKIN_REWARDS[checkinDay]+' পাবেন';}
+}
+function doCheckIn(){
+  if(lastCheckin===todayStr){showToast('⏳ আজকে ইতিমধ্যে চেক-ইন করেছেন!');return;}
+  if(checkinDay>=7){showToast('🎉 ৭ দিন সম্পূর্ণ!');return;}
+  const reward=CHECKIN_REWARDS[checkinDay];
+  USER.balance+=reward; refreshBalance();
+  lastCheckin=todayStr; localStorage.setItem('akt_last_checkin',todayStr);
+  checkinDay++; if(checkinDay>=7) checkinDay=0;
+  localStorage.setItem('akt_checkin_day',checkinDay);
+  renderCheckin();
+  showToast('🎉 চেক-ইন সফল! ৳'+reward+' ব্যালান্সে যোগ হয়েছে!');
+}
+
+// ═══ PLANS WITH SURPRISE BOXES ═══
+function renderPlansWithBoxes(){
+  const container = document.getElementById('plans-grid-dynamic');
+  container.innerHTML = '';
+  ALL_PLANS.forEach(plan => {
+    const isMyPlan = USER.hasActivePlan && USER.planPrice === plan.price;
+    const isOpened = isMyPlan && boxOpenedToday === plan.price;
+    const total = plan.daily * 30;
+
+    let boxClass, rewardTxt, labelTxt;
+    if(isOpened){
+      boxClass='opened-box'; rewardTxt='✅'; labelTxt='আগামীকাল<br>আসুন';
+    } else if(isMyPlan){
+      boxClass='active-box'; rewardTxt='৳'+plan.daily; labelTxt='ট্যাপ করুন!';
+    } else {
+      boxClass='locked-box'; rewardTxt='🔒'; labelTxt='লক';
+    }
+
+    const sparks = isMyPlan && !isOpened
+      ? `<span class="tc-spark"></span><span class="tc-spark"></span><span class="tc-spark"></span><div class="tc-sweep"></div>` : '';
+
+    const chestInner = isOpened
+      ? `<div class="tc-wrap">
+           <div class="tc-body">
+             <div class="tc-body-band"></div>
+             <div class="tc-keyhole"></div>
+           </div>
+           <div class="tc-lid" style="transform:rotateX(-115deg)">
+             <div class="tc-lid-band"></div>
+             <div class="tc-inner" style="opacity:1"></div>
+             <div class="tc-hinge"><span></span><span></span></div>
+           </div>
+           <div class="tc-rim"></div>
+         </div>`
+      : `<div class="tc-wrap">
+           ${sparks}
+           <div class="tc-body">
+             <div class="tc-body-band"></div>
+             <div class="tc-keyhole"></div>
+           </div>
+           <div class="tc-lid">
+             <div class="tc-lid-band"></div>
+             <div class="tc-inner"></div>
+             <div class="tc-hinge"><span></span><span></span></div>
+           </div>
+           <div class="tc-rim"></div>
+           <div class="tc-coins-peek">🪙🪙🪙</div>
+         </div>`;
+
+    const coinStack = !isOpened
+      ? `<div class="tc-stack"><div class="tc-coin"></div><div class="tc-coin"></div><div class="tc-coin"></div></div>` : '';
+
+    container.innerHTML += `
+    <div class="plan-row">
+      <div class="plan-card${plan.popular?' popular':''}" onclick="openPlan(${plan.price},${plan.daily})">
+        ${plan.popular?'<div class="popular-badge">⭐ জনপ্রিয়</div>':''}
+        <span class="plan-emoji">${plan.emoji}</span>
+        <div class="plan-price">৳${plan.price.toLocaleString()} <span>বিনিয়োগ</span></div>
+        <div class="plan-daily">৳${plan.daily} / প্রতিদিন</div>
+        <div class="plan-info">৩০ দিনের প্ল্যান</div>
+        <div class="plan-total">💰 মোট আয়: ৳${total.toLocaleString()}</div>
+        <button class="plan-btn">প্ল্যান কিনুন →</button>
+      </div>
+      <div class="plan-box ${boxClass}" onclick="openPlanBox(${plan.price},${plan.daily})">
+        ${chestInner}
+        ${coinStack}
+        <div class="pb-reward">${rewardTxt}</div>
+        <div class="pb-label">${labelTxt}</div>
+      </div>
+    </div>`;
+  });
+}
+
+function openPlanBox(price, daily){
+  const isMyPlan = USER.hasActivePlan && USER.planPrice === price;
+  if(!isMyPlan){
+    showToast('🔒 দয়া করে প্ল্যান সক্রিয় করে চেষ্টা করুন!');
+    return;
+  }
+  if(boxOpenedToday === price){
+    showToast('⏳ বক্স আগামীকাল আবার খুলবে!');
+    return;
+  }
+  // open it
+  boxOpenedToday = price;
+  localStorage.setItem('akt_box_date', todayStr);
+  localStorage.setItem('akt_box_plan', String(price));
+  USER.balance += daily; refreshBalance();
+  renderPlansWithBoxes();
+  document.getElementById('sw-emoji').textContent='🎊';
+  document.getElementById('sw-title').textContent='অভিনন্দন!';
+  document.getElementById('sw-body').innerHTML=`
+    <div style="font-family:'Orbitron',monospace;font-size:32px;color:var(--gold);margin:10px 0">৳${daily}</div>
+    <div style="font-size:12px;color:var(--muted)">আপনার প্ল্যানের দৈনিক আয় ব্যালান্সে যোগ হয়েছে!</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:7px">আগামীকাল আবার খুলতে পারবেন 🎁</div>`;
+  openModal('surpriseModal');
+}
+
+// ═══ HELPERS ═══
+function refreshBalance(){
+  const el=document.getElementById('disp-balance');
+  if(!el) return;
+  if(USER.isGuest){
+    el.textContent='—';
+    el.closest('.balance-box') && (el.closest('.balance-box').style.display='none');
+  } else {
+    if(el.closest('.balance-box')) el.closest('.balance-box').style.display='block';
+    el.textContent=USER.balance.toLocaleString();
+  }
+  persistUser();
+}
+function copyNumber(){
+  navigator.clipboard.writeText('01723268974').then(()=>showToast('📋 Admin নম্বর কপি হয়েছে!')).catch(()=>showToast('নম্বর: 01723268974'));
+}
+function copyReferLink(){
+  const txt=document.getElementById('refer-link-text').textContent;
+  navigator.clipboard.writeText(txt).then(()=>showToast('🔗 রেফার লিংক কপি হয়েছে!')).catch(()=>showToast('লিংক কপি করুন'));
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',function(e){if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ═══ REFER PROGRESS ═══
+const REFER_MILESTONES = [
+  {count:5,  reward:200,  icon:'🥉', claimed:false},
+  {count:10, reward:500,  icon:'🥈', claimed:false},
+  {count:15, reward:799,  icon:'🥇', claimed:false},
+  {count:20, reward:1099, icon:'👑', claimed:false},
+];
+let referCount = parseInt(localStorage.getItem('akt_refer_count') || '3');
+let referMilestoneClaimed = JSON.parse(localStorage.getItem('akt_refer_claimed') || '[false,false,false,false]');
+REFER_MILESTONES.forEach((m,i)=>m.claimed=referMilestoneClaimed[i]);
+
+function renderReferProgress(){
+  const total = 20;
+  const pct = Math.min(referCount / total * 100, 100);
+  document.getElementById('rp-bar-fill').style.width = pct + '%';
+  document.getElementById('rp-count-num').textContent = referCount;
+
+  // milestone dots
+  const msWrap = document.getElementById('rp-milestones');
+  msWrap.innerHTML = '';
+  // add start dot
+  const startDiv = document.createElement('div');
+  startDiv.className = 'rp-ms';
+  startDiv.innerHTML = `<div class="rp-ms-dot ${referCount>=0?'reached':''}"></div><div class="rp-ms-num reached">০</div>`;
+  msWrap.appendChild(startDiv);
+
+  REFER_MILESTONES.forEach((m,i)=>{
+    const reached = referCount >= m.count;
+    const d = document.createElement('div');
+    d.className = 'rp-ms';
+    d.innerHTML = `
+      <div class="rp-ms-dot ${m.claimed?'claimed':reached?'reached':''}"></div>
+      <div class="rp-ms-num ${reached?'reached':''}">${m.count}</div>`;
+    msWrap.appendChild(d);
+  });
+
+  // reward cards
+  const row = document.getElementById('rp-rewards-row');
+  row.innerHTML = '';
+  REFER_MILESTONES.forEach((m,i)=>{
+    const reached = referCount >= m.count;
+    let cardClass = 'rp-reward-card';
+    if(m.claimed) cardClass += ' claimed';
+    else if(reached) cardClass += ' reached';
+
+    let btn = '';
+    if(m.claimed){
+      btn = `<div class="rp-claimed-lbl">✅ ক্লেইম হয়েছে</div>`;
+    } else if(reached){
+      btn = `<button class="rp-claim-btn" onclick="claimReferReward(${i})">🎁 ক্লেইম করুন</button>`;
+    } else {
+      btn = `<div style="font-size:8px;color:var(--muted);margin-top:7px">${m.count - referCount} টা বাকি</div>`;
+    }
+
+    row.innerHTML += `
+      <div class="${cardClass}">
+        <div class="rp-reward-icon">${m.icon}</div>
+        <div class="rp-reward-count ${reached?'reached':''}">${m.count} রেফার</div>
+        <div class="rp-reward-amt ${m.claimed?'claimed':reached?'reached':''}">৳${m.reward.toLocaleString()}</div>
+        ${btn}
+      </div>`;
+  });
+}
+
+function claimReferReward(idx){
+  const m = REFER_MILESTONES[idx];
+  if(m.claimed){showToast('⚠️ ইতিমধ্যে ক্লেইম করা হয়েছে!');return;}
+  if(referCount < m.count){showToast(`⚠️ ${m.count} রেফার লাগবে!`);return;}
+  m.claimed = true;
+  referMilestoneClaimed[idx] = true;
+  localStorage.setItem('akt_refer_claimed', JSON.stringify(referMilestoneClaimed));
+  USER.balance += m.reward;
+  refreshBalance();
+  renderReferProgress();
+  showToast(`🎉 ${m.icon} ৳${m.reward.toLocaleString()} রিওয়ার্ড ব্যালান্সে যোগ হয়েছে!`);
+}
+
+// ═══ STARTUP — runs after all functions defined ═══
+(function(){
+  // Always hide sidebar & main first
+  const sb=document.querySelector('.sidebar');
+  const mn=document.querySelector('.main');
+  if(sb) sb.style.display='none';
+  if(mn) mn.style.display='none';
+
+  // Try auto-login from saved session
+  const ph=localStorage.getItem('akt_session');
+  if(ph){
+    const u=getUsers().find(x=>x.phone===ph);
+    if(u){ enterApp(u); return; }
+  }
+  // No session — show auth screen (already visible)
+})();
+</script>
+</body>
+  </html>
